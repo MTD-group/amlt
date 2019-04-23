@@ -232,7 +232,7 @@ if __name__ == "__main__":
 		print('\n',structure_number)
 		atoms = reasonable_random_structure_maker(elements, 
 						fill_factor_max = 0.65, # 0.65 is about the max
-						fill_factor_min = 0.65, #0.2 is default
+						fill_factor_min = 0.2, #0.2 is default
 						composition_generator = generate_random_silicate)
 
 		#print(atoms)
