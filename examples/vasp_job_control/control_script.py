@@ -8,7 +8,7 @@ from ase import io
 
 
 
-submit = False
+submit = True
 
 
 rcut = 5.0
@@ -87,7 +87,7 @@ job_script_template = \
 #SBATCH  --nodes=1 
 #SBATCH  --core-spec=4 
 #SBATCH  --tasks-per-node=64 
-#SBATCH  --time=01:00:00 
+#SBATCH  --time=00:20:00 
 #SBATCH  --constraint=knl 
 #SBATCH  --account=m3179 
 #SBATCH  --mail-type=ALL 

@@ -3,7 +3,7 @@ from ase import io
 from ase.calculators.vasp import Vasp
 from numpy import loadtxt
 
-temp = load('temperature.txt')
+temp = loadtxt('temperature.txt')
 
 atoms = io.read('POSCAR.initial', format = 'vasp')
 

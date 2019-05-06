@@ -19,7 +19,9 @@ calc.set(lreal='Auto')
 
 	
 ### vasp settings
-calc.set(nsw = 0 )
+calc.set(nsw = 0, ediffg = -0.01, isym=0 )
+## VTST settings
+calc.set(ibrion = 3, potim = 0, iopt = 1, maxmove = maxmove )
 
 calc.calculate(atoms)
 
