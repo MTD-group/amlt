@@ -1,19 +1,28 @@
+import os
+os.environ['VASP_PP_PATH'] = '/global/homes/m/mjwaters/vasp_pseudos'
 
 from ase import io
-from ase.calculators.vasp import Vasp
-
-#max_move_per_atom = 0.05
-#maxmove = max_move_per_atom * len(atoms)
-maxmove = 0.6
-
 atoms = io.read('POSCAR.initial', format = 'vasp')
 
+from amlt import kgrid_from_cell_volume
+kpd = 1000
+kpts = kgrid_from_cell_volume(atoms,kpd)
+if sum(kpts) == 3:
+	#os.environ['VASP_COMMAND'] ="srun -c4 --cpu_bind=cores vasp_gam"
+	os.environ['VASP_COMMAND'] ="srun --cpu_bind=cores vasp_gam"
+else:
+	#os.environ['VASP_COMMAND'] ="srun -c4 --cpu_bind=cores vasp_std"
+	os.environ['VASP_COMMAND'] ="srun --cpu_bind=cores vasp_std"	
+
+
+maxmove = 0.6
 
 ### minimal tags to run
-calc = Vasp( xc='PBE', setups= 'minimal', kpts = [1,1,1])
+from ase.calculators.vasp import Vasp
+calc = Vasp( xc='PBE', setups= 'minimal', kpts = kpts)
 
 ### good tags to set
-calc.set(prec='Accurate', ediff=1E-7, encut = 450, algo = 'Fast', ispin = 1, nelm = 200, lmaxmix = 4)
+calc.set(prec='Accurate', ediff=1E-8*len(atoms), encut = 450, algo = 'Fast', ispin = 1, nelm = 200, lmaxmix = 4)
 calc.set(lreal='Auto')
 
 

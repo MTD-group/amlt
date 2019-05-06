@@ -16,8 +16,8 @@ rcut = 5.0
 name_prefix = 'ZrO2'
 
 
-jobs = [[3, 'random',      'relax'],
-        [4, 'polymorphD3', 'md'   ],
+jobs = [[0, 'random',      'relax'],
+        [2, 'polymorphD3', 'md'   ],
         [0, 'known',       'sp'   ]]# when 'known' is seen, well just enumerate the known structures. 
 
 
@@ -83,11 +83,11 @@ job_script_template = \
 '''#!/bin/bash
 #SBATCH  --job-name="%s" 
 #SBATCH  --output=stdout.log 
-#SBATCH  --qos=regular
+#SBATCH  --qos=debug
 #SBATCH  --nodes=1 
 #SBATCH  --core-spec=4 
 #SBATCH  --tasks-per-node=64 
-#SBATCH  --time=00:20:00 
+#SBATCH  --time=00:15:00 
 #SBATCH  --constraint=knl 
 #SBATCH  --account=m3179 
 #SBATCH  --mail-type=ALL 
@@ -99,15 +99,16 @@ pwd
 module load python/3.6-anaconda-5.2
 #module load vasp/5.4.4-knl
 #module load vasp/20171017-knl
-module load vasp-tpc/20170629-knl
+#module load vasp-tpc/20170629-knl
+module load vasp-tpc/5.4.4-knl
 
 export OMP_NUM_THREADS=4
 
 
-export VASP_COMMAND="srun -c4 --cpu_bind=cores vasp_gam"
-export VASP_PP_PATH=$HOME/vasp_pseudos
+#export VASP_COMMAND="srun -c4 --cpu_bind=cores vasp_gam"
+#export VASP_PP_PATH=$HOME/vasp_pseudos
 
-echo "VASP pseudo path" $VASP_PP_PATH
+#echo "VASP pseudo path" $VASP_PP_PATH
 
 python ../../%s.py
 '''
