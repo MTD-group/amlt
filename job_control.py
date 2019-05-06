@@ -84,3 +84,36 @@ def vasp_job_maker(name_prefix, jobs, job_command, job_script_name, job_script_t
 				my_traj.close()
 
 				print('\n',structure_number, 'done with %i images'% len(images))
+
+
+
+
+
+
+
+def kgrid_from_cell_volume(atoms, kpoint_density ):
+	import math
+	kpd = kpoint_density
+	lengths_angles = atoms.get_cell_lengths_and_angles()
+	#if math.fabs((math.floor(kppa ** (1 / 3) + 0.5)) ** 3 - kppa) < 1:
+	#    kppa += kppa * 0.01
+	lengths = lengths_angles[0:3]
+	ngrid = kpd/atoms.get_volume() # BZ volume = 1/cell volume (withot 2pi factors)
+	mult = (ngrid * lengths[0] * lengths[1] * lengths[2]) ** (1 / 3)
+
+	num_divf = [int(math.floor(max(mult / l, 1))) for l in lengths]
+	kpdf = atoms.get_volume()*num_divf[0]*num_divf[1]*num_divf[2]
+	errorf = abs(kpd - kpdf)/kpdf # not a type being 0.5 is much worse than being 1.5
+
+
+	num_divc = [int(math.ceil(mult / l)) for l in lengths]
+	kpdc = atoms.get_volume()*num_divc[0]*num_divc[1]*num_divc[2]
+	errorc = abs(kpd - kpdc)/kpdc #same
+
+	if errorc < errorf :
+		num_div = num_divc
+	else:
+		num_div = num_divf
+
+	#num_div = num_divf
+	return num_div
