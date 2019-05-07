@@ -39,7 +39,7 @@ def random_deletion(atoms,  deletion_chance):
 	del atoms[mask]
 	
 	
-def random_distortion(atoms, atom_distortion, lattice_distortion):
+def random_distortion(atoms, atom_distortion, lattice_distortion, volume_change_max = 0.05):
 	""" Add Gaussian noise to atoms's positions and lattice in place.
 	Args:
 		atoms (Atoms): ASE atoms object to modify
@@ -50,15 +50,35 @@ def random_distortion(atoms, atom_distortion, lattice_distortion):
 						
 	"""
 	scaled_positions = atoms.get_scaled_positions()
-	new_cell = (1.0+ lattice_distortion*np.random.randn(6)) * atoms.get_cell_lengths_and_angles()
-	atoms.set_cell( new_cell )
+	vol0 = atoms.get_volume()
+	old_cell =  atoms.get_cell()
+	old_lengths = atoms.get_cell_lengths_and_angles()[0:3]
+	volume_change = 2.0*volume_change_max # just to start the loop	
+	next_cell = np.zeros((3,3))
+
+	while abs(volume_change)>= abs(volume_change_max):
+		for dir_index in range(3):
+			l = old_lengths[dir_index]
+			delta = np.random.randn(3)
+			delta = delta/np.sqrt(delta.dot(delta))
+			next_cell[dir_index] = lattice_distortion*l*delta +  old_cell[dir_index]
+
+		atoms.set_cell( next_cell )
+		volume_change = (atoms.get_volume()-vol0)/vol0		
+
 	atoms.set_scaled_positions(scaled_positions) # this prevents missalignment of atoms with a radically shifted cell
 	atoms.wrap()
+
+	## this is the old unlreliable method
+	## new_cell = (1.0+ lattice_distortion*np.random.randn(6)) * atoms.get_cell_lengths_and_angles()
+	## print( new_cell)
 	
+	
+	# small atom distortions
 	atoms.set_positions ( atoms.positions + atom_distortion* np.random.randn(len(atoms),3) )
 
 	
-def polymorphD3(atoms, atom_distortion=0.2, lattice_distortion=0.10, deletion_chance=0.05, rcut=6.5): 
+def polymorphD3(atoms, atom_distortion=0.2, lattice_distortion=0.10, deletion_chance=0.05, rcut=6.5, volume_change_max = 0.05): 
 	""" Creates a perturbed version of the input structure.
 	
 	Creates a random supercell, removes random atoms, and randomly 
@@ -79,7 +99,7 @@ def polymorphD3(atoms, atom_distortion=0.2, lattice_distortion=0.10, deletion_ch
 	
 	random_deletion(atoms_out, deletion_chance)
 	
-	random_distortion(atoms_out, atom_distortion, lattice_distortion)
+	random_distortion(atoms_out, atom_distortion, lattice_distortion, volume_change_max)
  
 	return atoms_out
 

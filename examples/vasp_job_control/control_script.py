@@ -8,7 +8,7 @@ from ase import io
 
 
 
-submit = True
+submit = False
 
 
 rcut = 5.0
@@ -16,10 +16,9 @@ rcut = 5.0
 name_prefix = 'ZrO2'
 
 
-jobs = [[0, 'random',      'relax'],
-        [2, 'polymorphD3', 'md'   ],
-        [0, 'known',       'sp'   ]]# when 'known' is seen, well just enumerate the known structures. 
-
+jobs = [[   0, 'known',        'sp'   ], # when 'known' is seen, it will just enumerate the known structures.
+        [ 100, 'polymorphD3',  'md'   ],
+        [  50, 'random',       'relax']]
 
 
 
@@ -48,7 +47,7 @@ def generate_random_composition(elements, no_gas = True):
 
 random_structure_parameters = dict(
 		elements = elements, 
-		fill_factor_max = 0.30, # 0.65 is about the max for the hard radii
+		fill_factor_max = 0.60, # 0.65 is about the max for the hard radii
 		fill_factor_min = 0.10,
 		composition_generator = generate_random_composition,
 		cut_off_radius = rcut,
