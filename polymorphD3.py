@@ -49,9 +49,12 @@ def random_distortion(atoms, atom_distortion, lattice_distortion):
 			multiply cell lengths and angles by in percent
 						
 	"""
-	
+	scaled_positions = atoms.get_scaled_positions()
 	new_cell = (1.0+ lattice_distortion*np.random.randn(6)) * atoms.get_cell_lengths_and_angles()
 	atoms.set_cell( new_cell )
+	atoms.set_scaled_positions(scaled_positions) # this prevents missalignment of atoms with a radically shifted cell
+	atoms.wrap()
+	
 	atoms.set_positions ( atoms.positions + atom_distortion* np.random.randn(len(atoms),3) )
 
 	
