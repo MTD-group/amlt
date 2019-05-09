@@ -77,8 +77,16 @@ def random_distortion(atoms, atom_distortion, lattice_distortion, volume_change_
 	# small atom distortions
 	atoms.set_positions ( atoms.positions + atom_distortion* np.random.randn(len(atoms),3) )
 
+def random_magnetic_moment_flips(atoms, flip_chance):
+	mask = np.random.rand(len(atoms))
+	mask = np.where(mask < flip_chance, True, False)
+
+	magmoms = atoms.get_initial_magnetic_moments()
+	magmoms[mask] = -magmoms[mask]
 	
-def polymorphD3(atoms, atom_distortion=0.2, lattice_distortion=0.10, deletion_chance=0.05, rcut=6.5, volume_change_max = 0.05): 
+	atoms.set_initial_magnetic_moments(magmoms)
+	
+def polymorphD3(atoms, atom_distortion=0.2, lattice_distortion=0.10, deletion_chance=0.05, rcut=6.5, volume_change_max = 0.05, flip_chance = 0.10): 
 	""" Creates a perturbed version of the input structure.
 	
 	Creates a random supercell, removes random atoms, and randomly 
@@ -101,6 +109,8 @@ def polymorphD3(atoms, atom_distortion=0.2, lattice_distortion=0.10, deletion_ch
 	
 	random_distortion(atoms_out, atom_distortion, lattice_distortion, volume_change_max)
  
+	random_magnetic_moment_flips(atoms, flip_chance)
+
 	return atoms_out
 
 if __name__ == "__main__":
