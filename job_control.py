@@ -78,7 +78,7 @@ def vasp_job_maker(name_prefix, jobs, job_command, job_script_name, job_script_t
 					os.chdir(twd)
 					print(struct_dir, 'job submitted')
 				else:
-					print(struct_dir, 'job created')
+					print(struct_dir, 'job not yet run')
 				
 			else:
 				images = io.read(struct_dir+'OUTCAR', index = ':')
