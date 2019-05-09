@@ -28,6 +28,7 @@ def reasonable_random_structure_maker(elements, composition_generator,
 										max_build_failures = 20,
 										element_radii = default_element_radii,
 										hard_radii    = default_hard_radii,
+										magmom_generator = None,
 										verbose = False):
 	from ase import Atoms, Atom
 	from ase.data import atomic_numbers, chemical_symbols
@@ -187,7 +188,12 @@ def reasonable_random_structure_maker(elements, composition_generator,
 				n_build_failures += 1
 				print('%i Build Failures'%n_build_failures)
 
-
+	
+	if callable(magmom_generator):
+		magmoms = magmom_generator(atoms) #should return random spins for the atoms input
+		atoms.set_initial_magnetic_moments(magmoms)
+		print('Net Magnetic Moment:', magmoms.sum())
+		
 	#print(structure_direct, 'Structure Successfully Made.')
 	print('Structure Successfully Made.')
 	

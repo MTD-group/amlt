@@ -6,7 +6,7 @@
 def vasp_job_maker(name_prefix, jobs, job_command, job_script_name, job_script_template, md_temperature_range = (100, 600), submit = False,
 	random_structure_parameters = None, 
 	known_structures=[], polymorphD3_parameters = None,
-	first_structure = 'POSCAR.initial' ):
+	first_structure = 'POSCAR.initial', magmom_filename = 'MAGMOMS.initial'):
 
 	import numpy as np
 	from ase import io
@@ -39,6 +39,7 @@ def vasp_job_maker(name_prefix, jobs, job_command, job_script_name, job_script_t
 
 				if job_type[1] == 'random':
 					atoms = reasonable_random_structure_maker(**random_structure_parameters)
+					#if callable(random_structure_parameters['magmom_generator']):
 					
 				elif job_type[1] == 'polymorphD3':
 					index = np.random.random_integers(len(known_structures)-1)
@@ -49,7 +50,11 @@ def vasp_job_maker(name_prefix, jobs, job_command, job_script_name, job_script_t
 				else: 
 					raise Exception('Structure type "%s" not recognized'%job_type[1] )
 				
-				io.write(struct_dir+ first_structure, atoms, format = 'vasp')	
+				io.write(struct_dir+ first_structure, atoms, format = 'vasp')
+				magmoms = atoms.get_initial_magnetic_moments()
+				# magmom check
+				if np.sqrt(magmoms.dot(magmoms)) > 0.0000001:
+					np.savetxt(struct_dir + magmom_filename,  magmoms.T)
 				
 				if job_type[2] == 'md':
 					temp = np.random.rand()*(max(md_temperature_range) - min(md_temperature_range)) + min(md_temperature_range)
