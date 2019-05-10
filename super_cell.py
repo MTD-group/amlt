@@ -57,12 +57,16 @@ def super_cell(atoms, cells_needed, use_initial_magnetic_moments = False):
 			
 
 	
-
+	dup_index = np.zeros(3)
 	for i in range(cells_needed[0]):
+		dup_index[0] = i
 		for j in range(cells_needed[1]):
+			dup_index[1] = j
 			for k in range(cells_needed[2]):
+				dup_index[2] = k
+				
 				energy_out += energy
-				shift = cell.dot([i,j,k])
+				shift = dup_index.dot(cell)
 				for atom_index in range(len(atoms)):
 					atoms_out.append(Atom(	elements[atom_index],
 											position = atoms.positions[atom_index] + shift,
