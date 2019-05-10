@@ -36,16 +36,25 @@ def super_cell(atoms, cells_needed, use_initial_magnetic_moments = False):
 	energy_out  = 0.0
 
 	# do a test for magmoms
-	try:	
+	has_magmoms = False
+	calc = atoms.get_calculator()
+	if calc != None:
+		if 'magmom' in calc.results:	
+			has_magmoms = True
+	
+	if has_magmoms:
 		magmoms  = atoms.get_magnetic_moments()
+		magmoms_out = [] # will be filled below
+	else:
+		magmoms = len(atoms)*[None]
+		magmoms_out = None
+	
+	# allows overriding info
+	if use_initial_magnetic_moments:
+		magmoms = atoms.get_initial_magnetic_moments()
 		magmoms_out = []
-	except:
-		if use_initial_magnetic_moments:
-			magmoms = atoms.get_initial_magnetic_moments()
-			magmoms_out = []
-		else:	
-			magmoms = len(atoms)*[None]
-			magmoms_out = None
+		
+			
 
 	
 
@@ -86,3 +95,26 @@ def super_cell_if_needed(atoms, rcut, verbose = True, use_initial_magnetic_momen
 
 
 
+
+if __name__ == "__main__":
+
+	from ase import io
+	
+	traj = io.Trajectory('test_structures/AFM_Cr.traj','r')
+	Cr_atoms = traj[0]
+	traj.close()
+	
+	ZrO2_atoms = io.read('test_structures/ZrO2.OUTCAR')
+	
+	#tlins_atoms = io.read('test_structures/TlInS2_mp-632539_primitive.cif')
+
+	tests = [Cr_atoms, ZrO2_atoms]
+
+	for atoms in tests:
+		super_cell(atoms, [1,1,2])
+	
+		#calc = atoms.get_calculator()
+		#print(calc)
+		#if calc != None:
+		#	if 'magmom' in calc.results:
+		#		atoms.get_magnetic_moments()
