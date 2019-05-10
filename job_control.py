@@ -88,7 +88,7 @@ def vasp_job_maker(name_prefix, jobs, job_command, job_script_name, job_script_t
 					my_traj.write(atoms = atoms)
 				my_traj.close()
 
-				print('\n',structure_number, 'done with %i images'% len(images))
+				print(struct_dir.ljust(25), 'done with %i images'% len(images))
 
 
 
