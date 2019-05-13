@@ -1,6 +1,6 @@
 
 
-n_structures = 200 # half will be trained on
+
 
 use_tensorflow = False
 
@@ -41,10 +41,10 @@ from amp.model.kernelridge import KernelRidge
 from amp.model import LossFunction
 
 
-collect_in_zip = True
 
-struct_types = ['known',
-		#'polymorphD3',
+
+struct_types = [#'known',
+		#'polymorphD3']
 		'random']
 		
 dyn_types = ['md','relax','sp']		
@@ -53,15 +53,12 @@ from os import path, chdir, getcwd, system
 basedir = getcwd()
 
 from ase import io
-
-total = 0
-
 from glob import glob
 
 
 
 
-assign_cores(cores={'localhost': 8})
+
 
 from amp.descriptor.gaussian import  make_symmetry_functions
 
@@ -88,14 +85,14 @@ if True:
 	G = {'Zr': Gf,
 		'O': Gf}
 	# NN
-	#layers = 3
+	#layers = 1
 	#nodes = 10
 	#layer_config = layers*[nodes]
 	layer_config = (16, 8, 4)
 	if use_tensorflow:
 		my_model = NeuralNetwork(  hiddenlayers={"Zr":layer_config, "O":layer_config}, force_coefficient=None,  )
 	else:
-		my_model = NeuralNetwork(  hiddenlayers={"Zr":layer_config, "O":layer_config},  checkpoints = 20)
+		my_model = NeuralNetwork(  hiddenlayers={"Zr":layer_config, "O":layer_config},  checkpoints = 5)
 
 
 if os.path.isfile(potential_file ):
@@ -109,10 +106,12 @@ else:
 
 
 
+############### parsing images ##########
+
 from amlt import super_cell_if_needed
 
 image_list = []
-
+total=0
 time1 = time.time()
 for struct_type in struct_types:
 	for dyn_type in dyn_types:	
@@ -125,30 +124,45 @@ for struct_type in struct_types:
 				name = sub_dir.split('/')[-2]
 				if name.isdigit():
 					
-					traj = io.Trajectory(filename = sub_dir  + 'images.traj', mode='r')
-
-					print (sub_dir.ljust(22)+ ('atoms %i'%len(traj[0])).ljust(12) +'images', len(traj))
-					
-					for image in traj:
-						im = super_cell_if_needed(image, cut_off_radius, verbose=False)						
-						image_list.append(im)
+					if int(name)%2 == 0:
+						traj = io.Trajectory(filename = sub_dir  + 'images_supercell.traj', mode='r')
+						#traj_super = io.Trajectory(filename = sub_dir  + 'images_supercell.traj', mode='w')
 						
-						
+						subsub_total = 0
 					
-					sub_total += len(traj)
+						#for image in traj:
+						for image_index in range(len(traj)):
+							if image_index >= 5 and image_index%1 == 0:
+								image = traj[image_index]
+							
+								verbose = False
+								if image_index == 0: verbose = True
+							
+								im = super_cell_if_needed(image, cut_off_radius, verbose=verbose)						
+								#traj_super.write(im)
+								image_list.append(im)
+						
+								subsub_total += 1
+								
+						print (sub_dir.ljust(22)+ ('atoms %i'%len(traj[0])).ljust(12) +'images loaded %i/%i'%(subsub_total, len(traj)))
+						sub_total += subsub_total
+						#traj_super.close()
+						traj.close()
 			print('sub_total: %i \n'% sub_total)
 
 			total+=	sub_total
-print('Total number of images:', total)
+print('Total Number of Training Images:', total)
 time2 = time.time()
 print('Time for file parsing is: {}'.format(time2-time1))
 
 ##################################################
 
-
+from random import shuffle
 # quick train with energy?
 MLIP.model.lossfunction = LossFunction(convergence={'energy_rmse': 0.001}, force_coefficient=None)
-MLIP.train(images=image_list[0:200])
+shuffle(image_list)
+#assign_cores(cores={'localhost': 16})
+MLIP.train(images=image_list)
 
 if False:
 	# slow train with energy and forces?
