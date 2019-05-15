@@ -1,28 +1,17 @@
 
 
 
-import os
-from ase import Atoms, Atom, units
+
 from ase import io
-#from ase.calculators.emt import EMT
-#from ase.build import fcc110
-#from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
-#from ase.md import VelocityVerlet
-from ase.constraints import FixAtoms
+import os
 
 from amp import Amp
-from amp.descriptor.gaussian import Gaussian
-from amp.model.neuralnetwork import NeuralNetwork
-
-from os import chdir, getcwd
-
-from copy import deepcopy
-from numpy import array, mean, sqrt, floor, ceil, arange, linspace, savetxt, percentile
+from numpy import array, mean, sqrt, floor, arange, linspace, savetxt, percentile
 
 from amlt import super_cell_if_needed
 
 
-n_structures = 200
+n_structures = 50
 
 rcut = 6.5
 use_uc = False
@@ -38,24 +27,25 @@ MLIP_energy_test =  []
 train_images = []
 test_images  = []
 
-for structure_number in range( n_structures):
-	struct_dir = str(structure_number) +'/'
-	print (struct_dir)
-	traj =  io.Trajectory(filename =struct_dir  + 'minimize.traj', mode='r')	
+for structure_number in range(n_structures):
+    struct_dir = os.path.join('random_md', str(structure_number))
+    print (struct_dir)
+    filepath = os.path.join(struct_dir, 'images_supercell.traj')
+    traj =  io.Trajectory(filename=filepath, mode='r')	
 
 
-	for atoms in traj:
-		image = super_cell_if_needed(atoms, rcut =rcut)
-		if structure_number%2==0:		
-			actual_energy_train.append( image.get_potential_energy()/len(image))
-			MLIP_energy_train.append( MLIP.get_potential_energy(image)/len(image))
-			train_images.append(image.copy())
-		else:
-			actual_energy_test.append( image.get_potential_energy()/len(image))
-			MLIP_energy_test.append( MLIP.get_potential_energy(image)/len(image))
-			test_images.append(image.copy())
-	
-	traj.close()
+    for atoms in traj:
+        image = super_cell_if_needed(atoms, rcut =rcut)
+        if structure_number%2==0:		
+            actual_energy_train.append( image.get_potential_energy()/len(image))
+            MLIP_energy_train.append( MLIP.get_potential_energy(image)/len(image))
+            train_images.append(image.copy())
+        else:
+            actual_energy_test.append( image.get_potential_energy()/len(image))
+            MLIP_energy_test.append( MLIP.get_potential_energy(image)/len(image))
+            test_images.append(image.copy())
+
+    traj.close()
 
 
 
