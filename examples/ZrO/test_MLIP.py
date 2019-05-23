@@ -108,11 +108,8 @@ else:
         #MLIP_energy_test.append( MLIP.get_potential_energy(image)/len(image))
    
 
-
-    np.savetxt('train_energies.txt', array([actual_energy_train, MLIP_energy_train]).T)
-    np.savetxt('test_energies.txt', array([actual_energy_test, MLIP_energy_test]).T)
-
-
+    np.savetxt('train_energies.txt', np.array([actual_energy_train, MLIP_energy_train]).T)
+    np.savetxt('test_energies.txt',  np.array([actual_energy_test,  MLIP_energy_test ]).T)
 
 ############# now we make a comparison plot #############
 
