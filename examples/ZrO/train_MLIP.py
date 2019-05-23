@@ -4,21 +4,22 @@ potential_file = 'Zr_O.amp'
 elements = ['Zr', 'O']
 cut_off_radius = 6.5
 
-overfit = 0.05
+overfit_penalty = 0.05
 
 checkpoint_interval = 4
 use_tensorflow = False
 cores = 8
 
 
+
 ########### loading AMP file if present ########################################
 from amp import Amp
 import os
 
+
 if os.path.isfile(potential_file ):
 	print("Loading", potential_file )
 	MLIP = Amp.load(potential_file )
-
 
 else: ############ Setting Up New Descriptors and MLIP ################
 
@@ -67,6 +68,7 @@ else: ############ Setting Up New Descriptors and MLIP ################
 				cutoff=cutoff),
 				model=my_model)
 
+
 ############### parsing images ##########
 from ase import io
 from glob import glob
@@ -85,13 +87,13 @@ total=0
 time1 = time.time()
 for struct_type in struct_types:
 	for dyn_type in dyn_types:	
-		top_direct = ('%s_%s/')%(struct_type, dyn_type)
+    top_direct = ('%s_%s/')%(struct_type, dyn_type)
 		if os.path.isdir(top_direct):
 			print(top_direct)
 			sub_total = 0
 			sub_dirs = sorted(glob(top_direct+'*/'))
 			for sub_dir in sub_dirs:
-				name = sub_dir.split('/')[-2]
+        name = sub_dir.split('/')[-2]
 				if name.isdigit():
 					traj = io.Trajectory(filename = sub_dir  + 'images_supercell.traj', mode='r')
 					subsub_total = 0
@@ -113,27 +115,29 @@ for struct_type in struct_types:
 
 			total+=	sub_total
 
+
 print('Total Number of Training Images:', total)
 print('Time for file parsing is: {}'.format(time.time() - time1))
 
 ##################################################
 from amp.model import LossFunction
 from random import shuffle
-
-# Only training energy
-MLIP.model.lossfunction = LossFunction(convergence={'energy_rmse': 0.001, 'overfit' : overfit}, force_coefficient=None, overfit = overfit)
-MLIP.model.checkpoints = checkpoint_interval
-MLIP.cores['localhost'] = cores
-
-shuffle(image_list)
-MLIP.train(images=image_list)
-
-if False:
-	# slow train with energy and forces?
-	MLIP.model.lossfunction = LossFunction( energy_coefficient=1.0, force_coefficient=0.2,
-								convergence={'energy_rmse': 0.1, 'force_rmse': 0.6})
-	MLIP.train(images=image_list)
-
-MLIP.save(potential_file, overwrite=True)
-
+def train_model(energy_coeff=1.0, force_training=False, force_coeff=0.2):
+    MLIP.model.checkpoints = checkpoint_interval
+    MLIP.cores['localhost'] = cores
+    shuffle(image_list) # "Load balancing"
+    if force_training:
+        # slow train with energy and forces?
+        MLIP.model.lossfunction = LossFunction(
+                energy_coefficient=energy_coeff, 
+                force_coefficient=force_coeff,
+                convergence={'energy_rmse': 0.1, 'force_rmse': 0.6})
+    else:
+        MLIP.model.lossfunction = LossFunction(convergence={'energy_rmse': 0.001, 
+                                                           'overfit': overfit},
+                                               force_coefficient=None,
+                                              overfit=overfit_penalty)
+    MLIP.train(images=image_list) 
+    MLIP.save(potential_file, overwrite=True)
+train_model()
 

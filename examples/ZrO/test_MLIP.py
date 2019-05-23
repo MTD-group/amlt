@@ -5,6 +5,7 @@ make_node_plots  = False
 MLIP_file_name = 'Zr_O.amp'
 rcut = 6.5
 
+
 #############################################################
 from ase import io
 from glob import glob
@@ -14,6 +15,8 @@ struct_types = [
         'known',
         'polymorphD3',
         'random']
+
+
 
 dyn_types = ['md','relax','sp']
 
@@ -26,6 +29,7 @@ MLIP_energy_test =  []
 
 train_images = []
 test_images  = []
+
 
 total=0
 #time1 = time.time()
@@ -110,6 +114,8 @@ else:
 
     np.savetxt('train_energies.txt', np.array([actual_energy_train, MLIP_energy_train]).T)
     np.savetxt('test_energies.txt',  np.array([actual_energy_test,  MLIP_energy_test ]).T)
+
+
 
 ############# now we make a comparison plot #############
 
