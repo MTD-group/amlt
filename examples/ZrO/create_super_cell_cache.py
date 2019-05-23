@@ -3,10 +3,6 @@
 cut_off_radius = 6.5
 
 
-import os
-
-import numpy as np
-
 import time
 
 
@@ -16,7 +12,7 @@ struct_types = ['known',
 		
 dyn_types = ['md','relax','sp']		
 
-from os import path, chdir, getcwd, system
+from os import path, getcwd
 basedir = getcwd()
 
 from ase import io
