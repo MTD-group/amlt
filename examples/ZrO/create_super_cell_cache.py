@@ -8,13 +8,13 @@ from amlt import super_cell_if_needed
 from ase import io
 from glob import glob
 import os
+
 import time
 struct_types = ['known',
 				'polymorphD3',
 				'random']
 		
 dyn_types = ['md','relax','sp']		
-
 
 #image_list = []
 total=0
