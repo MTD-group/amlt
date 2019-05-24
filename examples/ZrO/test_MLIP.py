@@ -5,7 +5,7 @@ make_node_plots  = False
 MLIP_file_name = 'Zr_O.amp'
 rcut = 6.5
 
-
+log_file = 'amp-test.log'
 #############################################################
 from ase import io
 from glob import glob
@@ -87,7 +87,9 @@ if use_cache:
     actual_energy_test,  MLIP_energy_test  = np.loadtxt('test_energies.txt',  usecols = [0,1], unpack =True)
 else:
     from amp import Amp
+    from amp.utilities import Logger, make_filename
     MLIP = Amp.load(MLIP_file_name)
+    MLIP._log = Logger(make_filename('',log_file))
     
     def MLIP_eval(image):
         return MLIP.get_potential_energy(image)/len(image)
