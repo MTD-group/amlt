@@ -1,10 +1,6 @@
-"""Commands for generating DFT input files."""
-import math
-import numpy as np
-import os
-from amlt import reasonable_random_structure_maker, polymorphD3, try_mkdir
-from ase import io
-from os.path import isfile
+"""Commands for generating DFT input files. Not intended to be called from 
+places besides control_script.py."""
+
 
 
 
@@ -23,19 +19,35 @@ def vasp_job_maker(name_prefix,
     """Creates VASP input files and controls job submission.
     Args:
         name_prefix (String):
-        jobs (Iterable):
-        job_command:
-        job_script_name:
-        job_script_template:
-        md_temperature_range (Tuple of numbers):
+        jobs (Iterable of Lists): Lists contain
+            [0]: the number of structures as an integer,
+            [1]: the type of structural modification as a string,
+                options are "known" which does not change the known crystalline
+                polymorphs, "polymorphD3" which adds vacancies and atomic 
+                displacements to the known crystalline polymorphs, and "random" 
+                which creates totally random arrangements of atoms.
+            [2]: which ase calculator template to use as a string,
+                options are "sp", "md", or "relax". sp means local relaxation
+        job_command (String): command used to submit jobs to scheduler
+        job_script_name (String): path to write the job script
+        job_script_template (String): Text of job submission script with string
+            formatting for calling the right calculator script.
+        md_temperature_range (Tuple of numbers): Min and max MD temperature
         submit (Boolean): Send jobs to SLURM scheduler if True
-        random_structure_parameters: 
-        known_structures (List): 
-        polymorphD3_parameters:
+        random_structure_parameters (Dict): Control parameters for making 
+            random structures.  See rrsm.py for details
+        known_structures (List): List of CIF filepaths for known polymorphs
+        polymorphD3_parameters (Dict): Control parameters for creating
+            distorted structures with vacancies and displacements. 
+            See polymorphD3.py for more details
         first_structure (String): Saved filename of starting structure
         magmom_filename (String): Saved filename of starting magnetic moments
     """
-
+    import numpy as np
+    import os
+    from amlt import reasonable_random_structure_maker, polymorphD3, try_mkdir
+    from ase import io
+    from os.path import isfile
     
     twd = os.getcwd()
 
@@ -55,7 +67,8 @@ def vasp_job_maker(name_prefix,
             struct_dir =job_type_dir + str(structure_number) +'/'
             try_mkdir(struct_dir)
 
-
+            # If input structure files have not been generated, we need to
+            # write a POSCAR and MAGMOM file based on the job type
             if not isfile(struct_dir+ first_structure):
 
 
@@ -70,7 +83,7 @@ def vasp_job_maker(name_prefix,
                 elif job_type[1] =='known':
                     atoms = known_structures[structure_number]
                 else: 
-                    raise Exception('Structure type "%s" not recognized'%job_type[1] )
+                    raise Exception('Structure type "{}" not recognized'.format(job_type[1]))
                 
                 io.write(struct_dir+ first_structure, atoms, format = 'vasp')
                 magmoms = atoms.get_initial_magnetic_moments()
@@ -85,7 +98,8 @@ def vasp_job_maker(name_prefix,
                 print(struct_dir, 'structure created')
                 
                 
-
+            # If VASP has not been run yet, we then create the job script for
+            # the SLURM job scheduler.
             if not isfile(struct_dir+'OUTCAR'):
 
                 fid = open(struct_dir+ job_script_name,'w')
@@ -105,7 +119,8 @@ def vasp_job_maker(name_prefix,
                     print(struct_dir, 'job submitted')
                 else:
                     print(struct_dir, 'job not yet run')
-                
+            # If VASP has already been run, we can write the resulting ionic
+            # steps to ase trajectory files.
             else:
                 images = io.read(struct_dir+'OUTCAR', index = ':')
                 my_traj = io.trajectory.Trajectory( struct_dir + 'images.traj', mode = 'w')
@@ -114,7 +129,7 @@ def vasp_job_maker(name_prefix,
                     my_traj.write(atoms = atoms)
                 my_traj.close()
 
-                print(struct_dir.ljust(25), 'done with %i images'% len(images))
+                print(struct_dir.ljust(25), 'done with {} images'.format(len(images)))
 
 
 
@@ -123,6 +138,7 @@ def vasp_job_maker(name_prefix,
 
 
 def kgrid_from_cell_volume(atoms, kpoint_density ):
+    import math
     kpd = kpoint_density
     lengths_angles = atoms.get_cell_lengths_and_angles()
     #if math.fabs((math.floor(kppa ** (1 / 3) + 0.5)) ** 3 - kppa) < 1:
