@@ -1,5 +1,5 @@
 
-from .super_cell import compute_super_cell_needed_for_rcut
+from super_cell import compute_super_cell_needed_for_rcut
 from ase import build
 import numpy as np
 
@@ -71,7 +71,7 @@ class PolymorphD3(object):
         new_cells = []
         for i in range(3):
             line = [0,0,0]
-            line[i] = np.random.random_integers(1,cell_ranges[i])
+            line[i] = np.random.randint(1,cell_ranges[i])
             new_cells.append(line)
         
         atoms_out = build.cut(atoms, 
@@ -152,7 +152,7 @@ if __name__ == "__main__":
     name = 'TlInS2_mp-632539_primitive.cif'
     unit_cell = io.read('test_structures/'+'TlInS2_mp-632539_primitive.cif')
     
-    Poly = PolymorphD3(unit_cell,  rcut = 5.0, flip_chance=0.10)
+    Poly = PolymorphD3(unit_cell,  rcut = 5.0, flip_chance=0.10, random_seed=0)
     atoms = Poly.atoms_out
     
     name_out = name.replace('.cif', '.poscar' )
