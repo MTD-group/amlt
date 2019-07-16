@@ -1,6 +1,10 @@
 """Commands for generating DFT input files. Not intended to be called from 
 places besides control_script.py."""
-
+import numpy as np
+import os
+from amlt import reasonable_random_structure_maker, polymorphD3, try_mkdir
+from ase import io
+from os.path import isfile
 
 
 
@@ -27,7 +31,7 @@ def vasp_job_maker(name_prefix,
                 displacements to the known crystalline polymorphs, and "random" 
                 which creates totally random arrangements of atoms.
             [2]: which ase calculator template to use as a string,
-                options are "sp", "md", or "relax". sp means local relaxation
+                options are "sp", "md", or "relax". sp means single point
         job_command (String): command used to submit jobs to scheduler
         job_script_name (String): path to write the job script
         job_script_template (String): Text of job submission script with string
@@ -43,11 +47,7 @@ def vasp_job_maker(name_prefix,
         first_structure (String): Saved filename of starting structure
         magmom_filename (String): Saved filename of starting magnetic moments
     """
-    import numpy as np
-    import os
-    from amlt import reasonable_random_structure_maker, polymorphD3, try_mkdir
-    from ase import io
-    from os.path import isfile
+
     
     twd = os.getcwd()
 
