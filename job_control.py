@@ -2,7 +2,7 @@
 places besides control_script.py."""
 import numpy as np
 import os
-from amlt import reasonable_random_structure_maker, polymorphD3, try_mkdir
+from amlt import reasonable_random_structure_maker, PolymorphD3, try_mkdir
 from ase import io
 from os.path import isfile
 
@@ -78,7 +78,7 @@ def vasp_job_maker(name_prefix,
                     
                 elif job_type[1] == 'polymorphD3':
                     index = np.random.random_integers(len(known_structures)-1)
-                    atoms = polymorphD3(known_structures[index], **polymorphD3_parameters).atoms_out
+                    atoms = PolymorphD3(known_structures[index], **polymorphD3_parameters).atoms_out
                     
                 elif job_type[1] =='known':
                     atoms = known_structures[structure_number]
