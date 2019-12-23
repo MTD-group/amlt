@@ -10,13 +10,16 @@ import numpy as np
 class PolymorphD3(object):
     
     def __init__(self, 
-                 atoms, 
+                 atoms,
+		 elements = None, 
                  atom_distortion=0.2, 
-                 lattice_distortion=0.10, 
+                 lattice_distortion=0.10,
+		 shrink_bias = 0.25, 
                  deletion_chance=0.05, 
                  rcut=6.5, 
                  volume_change_max = 0.05, 
-                 flip_chance = None,
+                 flip_chance = 0.10,
+		 swap_chance = 0.05,
                  random_seed = None): 
     
         """ Creates a perturbed version of the input structure.
@@ -31,6 +34,7 @@ class PolymorphD3(object):
             lattice distortion (Float): variance of Gaussian to
                 multiply cell lengths and angles by in percent
             deletion_chance (Float): fraction of atoms to remove on average
+	    swap_chance (Float): fraction of atoms to switch element type
             rcut (Float): maximum distance for considering pairs of atoms
             volume_change_max (Float): Relative amount volume allowed to change
             flip_chance (Float): If None, no flips; otherwise chance of 
@@ -47,7 +51,14 @@ class PolymorphD3(object):
         self.random_distortion(self.atoms_out, 
                           atom_distortion, 
                           lattice_distortion, 
-                          volume_change_max)
+                          volume_change_max,
+			  shrink_bias)
+			  
+        if elements == None:
+            el = atoms.get_chemical_symbols()
+            elements = list(set(el))
+	    
+        self.random_swaps(self.atoms_out, elements, swap_chance)
         
         if flip_chance:
             self.random_magnetic_moment_flips(self.atoms_out, flip_chance)
@@ -91,12 +102,25 @@ class PolymorphD3(object):
         mask = np.random.rand(len(atoms))
         mask = np.where(mask < deletion_chance, True, False)
         del atoms[mask]
+	
+    def random_swaps(self, atoms, elements, swap_chance):
+        mask = np.random.rand(len(atoms))
+        mask = np.where(mask < swap_chance, True, False)
+        el = atoms.get_chemical_symbols()
+	
+        if len(elements)>1:
+            for ia in range(len(atoms)):
+                if mask[ia]:
+                    ie = np.random.randint(0,len(elements))
+                    el[ia] = elements[ie]
+            atoms.set_chemical_symbols(el)
     
     def random_distortion(self, 
                           atoms, 
                           atom_distortion, 
                           lattice_distortion, 
-                          volume_change_max = 0.05):
+                          volume_change_max = 0.05,
+			  shrink_bias = 0.25):
         """ Add Gaussian noise to atoms's positions and lattice in place.
         Args:
             atoms (Atoms): ASE atoms object to modify
@@ -117,15 +141,17 @@ class PolymorphD3(object):
         while abs(volume_change)>= abs(volume_change_max):
             for dir_index in range(3):
                 l = old_lengths[dir_index]
-                delta = np.random.randn(3)
+                delta = np.random.randn(3)-0.5
                 delta = delta/np.sqrt(delta.dot(delta))
-                next_cell[dir_index] = (lattice_distortion*l*delta +  
-                         old_cell[dir_index])
+                next_cell[dir_index] = (lattice_distortion*l*delta + old_cell[dir_index])
     
             atoms.set_cell( next_cell )
             volume_change = (atoms.get_volume()-vol0)/vol0        
     
-        # this prevents missalignment of atoms with a radically shifted cell
+        dilation = lattice_distortion*(np.random.rand()-shrink_bias) + 1.0
+        atoms.set_cell(dilation*atoms.get_cell())
+	
+	# this prevents missalignment of atoms with a radically shifted cell
         atoms.set_scaled_positions(scaled_positions) 
         atoms.wrap()
         

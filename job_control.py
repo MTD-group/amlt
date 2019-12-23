@@ -78,7 +78,7 @@ def vasp_job_maker(name_prefix,
                     
                 elif job_type[1] == 'polymorphD3':
                     index = np.random.random_integers(len(known_structures)-1)
-                    atoms = polymorphD3(known_structures[index], **polymorphD3_parameters)
+                    atoms = polymorphD3(known_structures[index], **polymorphD3_parameters).atoms_out
                     
                 elif job_type[1] =='known':
                     atoms = known_structures[structure_number]
@@ -134,7 +134,58 @@ def vasp_job_maker(name_prefix,
 
 
 
+def safe_kgrid_from_cell_volume(atoms, kpoint_density ):
+    import numpy as np
+    kpd = kpoint_density
+    lengths_angles = atoms.get_cell_lengths_and_angles()
+    vol = atoms.get_volume()
+    lengths = lengths_angles[0:3]
+    ngrid = kpd/vol # BZ volume = 1/cell volume (without 2pi factors)
+    mult = (ngrid * lengths[0] * lengths[1] * lengths[2]) ** (1 / 3)
 
+    nkpt_frac  = np.zeros(3)
+    for i, l in enumerate(lengths):
+        nkpt_frac[i] = max(mult / l, 1)
+        
+    nkpt       = np.floor(nkpt_frac)
+    delta_ceil = np.ceil(nkpt_frac)-nkpt_frac # measure of which axes are closer to a whole number
+
+    actual_kpd = vol * nkpt[0]*nkpt[1]*nkpt[2]
+
+    check_order = np.argsort(delta_ceil) # we do this so we keep the grid as even as possible only rounding up when they are close
+
+
+    i = 0
+    if actual_kpd < kpd:
+        if np.isclose(nkpt_frac[check_order[0]], nkpt_frac[check_order[1]]) and np.isclose(nkpt_frac[check_order[1]], nkpt_frac[check_order[2]]):
+            nkpt[check_order[0]] = nkpt[check_order[0]] +1
+            nkpt[check_order[1]] = nkpt[check_order[1]] +1
+            nkpt[check_order[2]] = nkpt[check_order[2]] +1
+            actual_kpd = vol * nkpt[0]*nkpt[1]*nkpt[2]
+            i = 3
+
+        elif np.isclose(nkpt_frac[check_order[0]], nkpt_frac[check_order[1]]):
+            nkpt[check_order[0]] = nkpt[check_order[0]] +1
+            nkpt[check_order[1]] = nkpt[check_order[1]] +1
+            actual_kpd = vol * nkpt[0]*nkpt[1]*nkpt[2]
+            i = 2
+
+        elif np.isclose(nkpt_frac[check_order[1]], nkpt_frac[check_order[2]]):
+            nkpt[check_order[0]] = nkpt[check_order[0]] +1
+            actual_kpd = vol * nkpt[0]*nkpt[1]*nkpt[2]
+            if actual_kpd < kpd:
+                nkpt[check_order[1]] = nkpt[check_order[1]] +1
+                nkpt[check_order[2]] = nkpt[check_order[2]] +1
+                actual_kpd = vol * nkpt[0]*nkpt[1]*nkpt[2]
+            i = 3
+
+    while actual_kpd < kpd and i<=2:
+        nkpt[check_order[i]] = nkpt[check_order[i]] +1
+        actual_kpd = vol * nkpt[0]*nkpt[1]*nkpt[2]
+        i+=1
+
+    kp_as_ints = [int(nkpt[i]) for i in range(3)]
+    return kp_as_ints
 
 
 def kgrid_from_cell_volume(atoms, kpoint_density ):
