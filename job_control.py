@@ -1,4 +1,4 @@
-"""Commands for generating DFT input files. Not intended to be called from 
+"""Commands for generating DFT input files. Not intended to be called from
 places besides control_script.py."""
 import numpy as np
 import os
@@ -8,17 +8,17 @@ from os.path import isfile
 
 
 
-def vasp_job_maker(name_prefix, 
-                   jobs, 
-                   job_command, 
-                   job_script_name, 
-                   job_script_template, 
-                   md_temperature_range=(100, 600), 
+def vasp_job_maker(name_prefix,
+                   jobs,
+                   job_command,
+                   job_script_name,
+                   job_script_template,
+                   md_temperature_range=(100, 600),
                    submit = False,
-                   random_structure_parameters = None, 
-                   known_structures=[], 
+                   random_structure_parameters = None,
+                   known_structures=[],
                    polymorphD3_parameters = None,
-                   first_structure = 'POSCAR.initial', 
+                   first_structure = 'POSCAR.initial',
                    magmom_filename = 'MAGMOMS.initial'):
     """Creates VASP input files and controls job submission.
     Args:
@@ -27,8 +27,8 @@ def vasp_job_maker(name_prefix,
             [0]: the number of structures as an integer,
             [1]: the type of structural modification as a string,
                 options are "known" which does not change the known crystalline
-                polymorphs, "polymorphD3" which adds vacancies and atomic 
-                displacements to the known crystalline polymorphs, and "random" 
+                polymorphs, "polymorphD3" which adds vacancies and atomic
+                displacements to the known crystalline polymorphs, and "random"
                 which creates totally random arrangements of atoms.
             [2]: which ase calculator template to use as a string,
                 options are "sp", "md", or "relax". sp means single point
@@ -38,17 +38,17 @@ def vasp_job_maker(name_prefix,
             formatting for calling the right calculator script.
         md_temperature_range (Tuple of numbers): Min and max MD temperature
         submit (Boolean): Send jobs to SLURM scheduler if True
-        random_structure_parameters (Dict): Control parameters for making 
+        random_structure_parameters (Dict): Control parameters for making
             random structures.  See rrsm.py for details
         known_structures (List): List of CIF filepaths for known polymorphs
         polymorphD3_parameters (Dict): Control parameters for creating
-            distorted structures with vacancies and displacements. 
+            distorted structures with vacancies and displacements.
             See polymorphD3.py for more details
         first_structure (String): Saved filename of starting structure
         magmom_filename (String): Saved filename of starting magnetic moments
     """
 
-    
+
     twd = os.getcwd()
 
     for job_type in jobs:
@@ -56,7 +56,7 @@ def vasp_job_maker(name_prefix,
         job_type_dir = job_type[1] +'_' + job_type[2] +'/'
 
         try_mkdir(job_type_dir)
-        
+
         if job_type[1] =='known':
             n_structures = len(known_structures)
         else:
@@ -75,29 +75,29 @@ def vasp_job_maker(name_prefix,
                 if job_type[1] == 'random':
                     atoms = reasonable_random_structure_maker(**random_structure_parameters)
                     #if callable(random_structure_parameters['magmom_generator']):
-                    
+
                 elif job_type[1] == 'polymorphD3':
                     index = np.random.random_integers(len(known_structures)-1)
                     atoms = PolymorphD3(known_structures[index], **polymorphD3_parameters).atoms_out
-                    
+
                 elif job_type[1] =='known':
                     atoms = known_structures[structure_number]
-                else: 
+                else:
                     raise Exception('Structure type "{}" not recognized'.format(job_type[1]))
-                
+
                 io.write(struct_dir+ first_structure, atoms, format = 'vasp')
                 magmoms = atoms.get_initial_magnetic_moments()
                 # magmom check
                 if np.sqrt(magmoms.dot(magmoms)) > 0.0000001:
                     np.savetxt(struct_dir + magmom_filename,  magmoms.T)
-                
+
                 if job_type[2] == 'md':
                     temp = np.random.rand()*(max(md_temperature_range) - min(md_temperature_range)) + min(md_temperature_range)
                     np.savetxt(struct_dir+'temperature.txt', [temp,temp])
-                    
+
                 print(struct_dir, 'structure created')
-                
-                
+
+
             # If VASP has not been run yet, we then create the job script for
             # the SLURM job scheduler.
             if not isfile(struct_dir+'OUTCAR'):
@@ -106,15 +106,15 @@ def vasp_job_maker(name_prefix,
                 job_name = "{}_{}_{}_{}".format(
                         name_prefix,
                         job_type[1],
-                        job_type[2],  
+                        job_type[2],
                         structure_number)
-                fid.write(job_script_template.format(job_name, job_type[2])) 
+                fid.write(job_script_template.format(job_name, job_type[2]))
                 fid.close()
 
-                    
+
                 if submit:
                     os.chdir(struct_dir)
-                    os.system('sbatch '+job_script_name)
+                    os.system(job_command+' '+job_script_name)
                     os.chdir(twd)
                     print(struct_dir, 'job submitted')
                 else:
@@ -146,7 +146,7 @@ def safe_kgrid_from_cell_volume(atoms, kpoint_density ):
     nkpt_frac  = np.zeros(3)
     for i, l in enumerate(lengths):
         nkpt_frac[i] = max(mult / l, 1)
-        
+
     nkpt       = np.floor(nkpt_frac)
     delta_ceil = np.ceil(nkpt_frac)-nkpt_frac # measure of which axes are closer to a whole number
 
