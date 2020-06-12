@@ -77,7 +77,7 @@ def vasp_job_maker(name_prefix,
                     #if callable(random_structure_parameters['magmom_generator']):
 
                 elif job_type[1] == 'polymorphD3':
-                    index = np.random.random_integers(len(known_structures)-1)
+                    index = np.random.random_integers(0, len(known_structures)-1)
                     atoms = PolymorphD3(known_structures[index], **polymorphD3_parameters).atoms_out
 
                 elif job_type[1] =='known':
