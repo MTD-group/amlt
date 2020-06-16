@@ -122,14 +122,22 @@ def vasp_job_maker(name_prefix,
             # If VASP has already been run, we can write the resulting ionic
             # steps to ase trajectory files.
             else:
-                images = io.read(struct_dir+'OUTCAR', index = ':')
-                my_traj = io.trajectory.Trajectory( struct_dir + 'images.traj', mode = 'w')
+                if isfile(struct_dir + 'images.traj'):
+                    size = os.path.getsize(struct_dir + 'images.traj')
+                    print(size)
+                    if size > 4:
+                        images = io.trajectory.Trajectory( struct_dir + 'images.traj', mode = 'r')
+                    else:
+                        images = []
+                else:
+                    images = io.read(struct_dir+'OUTCAR', index = ':')
+                    my_traj = io.trajectory.Trajectory( struct_dir + 'images.traj', mode = 'w')
 
-                for atoms in images:
-                    my_traj.write(atoms = atoms)
-                my_traj.close()
-
-                print(struct_dir.ljust(25), 'done with {} images'.format(len(images)))
+                    for atoms in images:
+                        my_traj.write(atoms = atoms)
+                    my_traj.close()
+                
+                print(struct_dir.ljust(25), 'has {} images'.format(len(images)))
 
 
 
