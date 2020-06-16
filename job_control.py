@@ -116,15 +116,15 @@ def vasp_job_maker(name_prefix,
                     os.chdir(struct_dir)
                     os.system(job_command+' '+job_script_name)
                     os.chdir(twd)
-                    print(struct_dir, 'job submitted')
+                    print(struct_dir.ljust(25), 'job submitted')
                 else:
-                    print(struct_dir, 'job not yet run')
+                    print(struct_dir.ljust(25), 'job not yet run')
             # If VASP has already been run, we can write the resulting ionic
             # steps to ase trajectory files.
             else:
                 if isfile(struct_dir + 'images.traj'):
                     size = os.path.getsize(struct_dir + 'images.traj')
-                    print(size)
+                    #print(size)
                     if size > 4:
                         images = io.trajectory.Trajectory( struct_dir + 'images.traj', mode = 'r')
                     else:
