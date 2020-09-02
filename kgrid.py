@@ -1,7 +1,7 @@
 
 
 
-def get_kpts_from_kpd(atoms, kpd, only_even = False, show_kpts = True ):
+def get_kpts_from_kpd(atoms, kpd, only_even = False, show_kpts = True, atol = 1e-1 ):
     import numpy as np
     #kpd = kpoint_density
     
@@ -33,24 +33,25 @@ def get_kpts_from_kpd(atoms, kpd, only_even = False, show_kpts = True ):
 
     check_order = np.argsort(delta_ceil) # we do this so we keep the grid as even as possible only rounding up when they are close
 
+    
 
     i = 0 # tracks which index we checked
     if actual_kpd < kpd:
-        if np.isclose(nkpt_frac[check_order[0]], nkpt_frac[check_order[1]]) and \
-            np.isclose(nkpt_frac[check_order[1]], nkpt_frac[check_order[2]]):
+        if np.isclose(nkpt_frac[check_order[0]], nkpt_frac[check_order[1]], atol=atol) and \
+            np.isclose(nkpt_frac[check_order[1]], nkpt_frac[check_order[2]], atol=atol):
                 nkpt[check_order[0]] = nkpt[check_order[0]] +step
                 nkpt[check_order[1]] = nkpt[check_order[1]] +step
                 nkpt[check_order[2]] = nkpt[check_order[2]] +step
                 actual_kpd = vol * nkpt[0]*nkpt[1]*nkpt[2]
                 i = 3
 
-        elif np.isclose(nkpt_frac[check_order[0]], nkpt_frac[check_order[1]]):
+        elif np.isclose(nkpt_frac[check_order[0]], nkpt_frac[check_order[1]], atol=atol):
             nkpt[check_order[0]] = nkpt[check_order[0]] +step
             nkpt[check_order[1]] = nkpt[check_order[1]] +step
             actual_kpd = vol * nkpt[0]*nkpt[1]*nkpt[2]
             i = 2
 
-        elif np.isclose(nkpt_frac[check_order[1]], nkpt_frac[check_order[2]]):
+        elif np.isclose(nkpt_frac[check_order[1]], nkpt_frac[check_order[2]], atol=atol):
             nkpt[check_order[0]] = nkpt[check_order[0]] +step
             actual_kpd = vol * nkpt[0]*nkpt[1]*nkpt[2]
             if actual_kpd < kpd:
