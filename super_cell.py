@@ -76,7 +76,7 @@ def super_cell(atoms, cells_needed, use_initial_magnetic_moments = False):
 
 					if magmoms_out != None:
 						magmoms_out.append(magmoms[atom_index])
-	
+	# calc.results dict can edited directly
 	calc = SinglePointCalculator(atoms_out,
 			                     energy=energy_out,
 			                     forces=forces_out,
