@@ -84,7 +84,7 @@ class contour_exploration(Dynamics):
         ## this should prevent occilations
         self.previous_energies.fill(energy_target)
         
-        print(self.previous_energies)
+        #print(self.previous_energies)
         
         ## loginterval exists for the MolecularDynamics classe but not the more
         ## general Dynamics class
