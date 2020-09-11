@@ -7,6 +7,19 @@ from ase import io
 from os.path import isfile
 
 
+def outcar_to_traj(outcar_name = 'OUTCAR', traj_name='outcar.traj'):
+    try:
+        images = io.read(outcar_name, index = ':')
+        my_traj = io.trajectory.Trajectory( traj_name, mode = 'w')
+
+        for atoms in images:
+            my_traj.write(atoms = atoms)
+        my_traj.close()
+    except:
+        print('OUTCAR conversion failed! File may be incomplete.')
+
+
+
 
 def vasp_job_maker(name_prefix,
                    jobs,
@@ -19,7 +32,8 @@ def vasp_job_maker(name_prefix,
                    known_structures=[],
                    polymorphD3_parameters = None,
                    first_structure = 'POSCAR.initial',
-                   magmom_filename = 'MAGMOMS.initial'):
+                   magmom_filename = 'MAGMOMS.initial',
+                   rebuild_traj_cache = False):
     """Creates VASP input files and controls job submission.
     Args:
         name_prefix (String):
@@ -77,7 +91,8 @@ def vasp_job_maker(name_prefix,
                     #if callable(random_structure_parameters['magmom_generator']):
 
                 elif job_type[1] == 'polymorphD3':
-                    index = np.random.random_integers(0, len(known_structures)-1)
+                    assert len(known_structures)>0
+                    index = np.random.random_integers(low = 0, high=len(known_structures)-1)
                     atoms = PolymorphD3(known_structures[index], **polymorphD3_parameters).atoms_out
 
                 elif job_type[1] =='known':
@@ -91,11 +106,11 @@ def vasp_job_maker(name_prefix,
                 if np.sqrt(magmoms.dot(magmoms)) > 0.0000001:
                     np.savetxt(struct_dir + magmom_filename,  magmoms.T)
 
-                if job_type[2] == 'md':
-                    temp = np.random.rand()*(max(md_temperature_range) - min(md_temperature_range)) + min(md_temperature_range)
-                    np.savetxt(struct_dir+'temperature.txt', [temp,temp])
+                #if job_type[2] == 'md':
+                #    temp = np.random.rand()*(max(md_temperature_range) - min(md_temperature_range)) + min(md_temperature_range)
+                #    np.savetxt(struct_dir+'temperature.txt', [temp,temp])
 
-                print(struct_dir, 'structure created')
+                print(struct_dir.ljust(25), 'structure created')
 
 
             # If VASP has not been run yet, we then create the job script for
@@ -122,20 +137,24 @@ def vasp_job_maker(name_prefix,
             # If VASP has already been run, we can write the resulting ionic
             # steps to ase trajectory files.
             else:
-                if isfile(struct_dir + 'images.traj'):
+                if isfile(struct_dir + 'images.traj')==False or rebuild_traj_cache :
+                    #what if image writting is interupred?
+                    images = outcar_to_traj(struct_dir+'OUTCAR', struct_dir + 'images.traj')
+                    
+                    #images = io.read(struct_dir+'OUTCAR', index = ':')
+                    #my_traj = io.trajectory.Trajectory( struct_dir + 'images.traj', mode = 'w')
+
+                    #for atoms in images:
+                    #    my_traj.write(atoms = atoms)
+                    #my_traj.close()
+                else:
+
                     size = os.path.getsize(struct_dir + 'images.traj')
                     #print(size)
                     if size > 4:
                         images = io.trajectory.Trajectory( struct_dir + 'images.traj', mode = 'r')
                     else:
                         images = []
-                else:
-                    images = io.read(struct_dir+'OUTCAR', index = ':')
-                    my_traj = io.trajectory.Trajectory( struct_dir + 'images.traj', mode = 'w')
-
-                    for atoms in images:
-                        my_traj.write(atoms = atoms)
-                    my_traj.close()
                 
                 print(struct_dir.ljust(25), 'has {} images'.format(len(images)))
 
