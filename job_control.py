@@ -137,7 +137,7 @@ def vasp_job_maker(name_prefix,
             # If VASP has already been run, we can write the resulting ionic
             # steps to ase trajectory files.
             else:
-                if isfile(struct_dir + 'images.traj')==False or rebuild_traj_cache :
+                if isfile(struct_dir + 'images.traj')==False:#  or rebuild_traj_cache : this could delete advanced dynamics data. disabled for now.
                     #what if image writting is interupred?
                     images = outcar_to_traj(struct_dir+'OUTCAR', struct_dir + 'images.traj')
                     
