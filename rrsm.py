@@ -18,11 +18,11 @@ default_element_radii = {}
 default_hard_radii    = {}
 for z in range(len(ase_covalent_radii)):
 	default_element_radii[chemical_symbols[z]] = ase_covalent_radii[z]
-	default_hard_radii[chemical_symbols[z]] = 0.8*ase_covalent_radii[z]
+	default_hard_radii[chemical_symbols[z]] = 0.9*ase_covalent_radii[z]
 
 def reasonable_random_structure_maker(elements, composition_generator,
 										cut_off_radius = 5.0,
-										fill_factor_max = 0.65, 
+										fill_factor_max = 0.55, 
 										fill_factor_min = 0.2,
 										insert_attempt_max = 2000,
 										max_build_failures = 20,
@@ -237,7 +237,7 @@ if __name__ == "__main__":
 		
 		print('\n',structure_number)
 		atoms = reasonable_random_structure_maker(elements, 
-						fill_factor_max = 0.65, # 0.65 is about the max
+						fill_factor_max = 0.40, # 0.65 is about the max
 						fill_factor_min = 0.2, #0.2 is default
 						composition_generator = generate_random_silicate)
 

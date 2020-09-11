@@ -1,0 +1,5 @@
+# Requirements of this project
+ase>=3.17.0
+amp>=0.6.1
+numpy
+matplotlib
