@@ -186,7 +186,7 @@ def vasp_job_maker(name_prefix,
                     else:
                         images = []
                         print('%s was empty.'%(struct_dir + 'images.traj') )
-                print(struct_dir.ljust(25), 'has {} images'.format(len(images)))
+                print(struct_dir.ljust(25), '  has {:4d} images'.format(len(images)))
 
 
 
