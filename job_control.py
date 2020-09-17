@@ -133,7 +133,7 @@ def vasp_job_maker(name_prefix,
                 else:
                     raise Exception('Structure type "{}" not recognized'.format(job_type[1]))
 
-                io.write(struct_dir+ first_structure, atoms, format = 'vasp')
+                io.write(struct_dir+ first_structure, atoms, format = 'vasp', vasp5=True)
                 magmoms = atoms.get_initial_magnetic_moments()
                 # magmom check
                 if np.sqrt(magmoms.dot(magmoms)) > 0.0000001:
