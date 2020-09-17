@@ -7,16 +7,42 @@ from ase import io
 from os.path import isfile
 
 
-def outcar_to_traj(outcar_name = 'OUTCAR', traj_name='outcar.traj'):
-    try:
-        images = io.read(outcar_name, index = ':')
-        my_traj = io.trajectory.Trajectory( traj_name, mode = 'w')
+#def outcar_to_traj(outcar_name = 'OUTCAR', traj_name='outcar.traj'):
+#    try:
+#        images = io.read(outcar_name, index = ':')
+#        my_traj = io.trajectory.Trajectory( traj_name, mode = 'w')
+#
+#        for atoms in images:
+#            my_traj.write(atoms = atoms)
+#        my_traj.close()
+#    except:
+#        print('OUTCAR conversion failed! File may be incomplete.')
+#        images = []
+#
+#    return images
 
+def convert_to_traj(filename, traj_name= 'images.traj'):
+    try:
+        if '.traj' in filename:
+            images = io.trajectory.Trajectory( filename, mode = 'r')
+        else:
+            images = io.read(filename, index = ':')
+    
+        output_traj = io.trajectory.Trajectory( traj_name, mode = 'w')
         for atoms in images:
-            my_traj.write(atoms = atoms)
-        my_traj.close()
+            output_traj.write(atoms = atoms)
+        output_traj.close()
+    
     except:
-        print('OUTCAR conversion failed! File may be incomplete.')
+        print('conversion failed! File may be incomplete.')
+        images = []
+
+    return images
+
+
+
+def outcar_to_traj(outcar_name = 'OUTCAR', traj_name='outcar.traj'):
+    return convert_to_traj(filename = outcar_name, traj_name= traj_name)
 
 
 
@@ -75,7 +101,14 @@ def vasp_job_maker(name_prefix,
             n_structures = len(known_structures)
         else:
             n_structures = job_type[0]
+        
+        # set outputfile that will be used for checking job progress
+        if len(job_type)>=4:
+            outputfile = job_type[3]
+        else: #default to outcar if nto given
+            outputfile = 'OUTCAR'
 
+        # now we can loop over structures
         for structure_number in range(n_structures):
 
             struct_dir =job_type_dir + str(structure_number) +'/'
@@ -115,7 +148,9 @@ def vasp_job_maker(name_prefix,
 
             # If VASP has not been run yet, we then create the job script for
             # the SLURM job scheduler.
-            if not isfile(struct_dir+'OUTCAR'):
+            #if len(job_type)<4:
+
+            if not isfile(struct_dir + outputfile):
 
                 fid = open(struct_dir+ job_script_name,'w')
                 job_name = "{}_{}_{}_{}".format(
@@ -137,16 +172,11 @@ def vasp_job_maker(name_prefix,
             # If VASP has already been run, we can write the resulting ionic
             # steps to ase trajectory files.
             else:
-                if isfile(struct_dir + 'images.traj')==False:#  or rebuild_traj_cache : this could delete advanced dynamics data. disabled for now.
-                    #what if image writting is interupred?
-                    images = outcar_to_traj(struct_dir+'OUTCAR', struct_dir + 'images.traj')
-                    
-                    #images = io.read(struct_dir+'OUTCAR', index = ':')
-                    #my_traj = io.trajectory.Trajectory( struct_dir + 'images.traj', mode = 'w')
+                if isfile(struct_dir + 'images.traj')==False or rebuild_traj_cache:
 
-                    #for atoms in images:
-                    #    my_traj.write(atoms = atoms)
-                    #my_traj.close()
+                    #what if image writting is interupred? taken care of by function 
+                    images = convert_to_traj(struct_dir + outputfile, struct_dir + 'images.traj')	
+
                 else:
 
                     size = os.path.getsize(struct_dir + 'images.traj')
@@ -155,7 +185,7 @@ def vasp_job_maker(name_prefix,
                         images = io.trajectory.Trajectory( struct_dir + 'images.traj', mode = 'r')
                     else:
                         images = []
-                
+                        print('%s was empty.'%(struct_dir + 'images.traj') )
                 print(struct_dir.ljust(25), 'has {} images'.format(len(images)))
 
 
