@@ -20,6 +20,7 @@ class PolymorphD3(object):
                  volume_change_max = 0.05, 
                  flip_chance = 0.10,
 		 swap_chance = 0.05,
+                 min_cells = 2,
                  random_seed = None): 
     
         """ Creates a perturbed version of the input structure.
@@ -44,7 +45,7 @@ class PolymorphD3(object):
         self.atoms = atoms
         if isinstance(random_seed, int):
             np.random.seed(random_seed)
-        self.atoms_out = self.random_super_cell(self.atoms, rcut)
+        self.atoms_out = self.random_super_cell(self.atoms, rcut, min_cells)
         
         self.random_deletion(self.atoms_out, deletion_chance)
         
@@ -64,11 +65,12 @@ class PolymorphD3(object):
             self.random_magnetic_moment_flips(self.atoms_out, flip_chance)
         
     
-    def random_super_cell(self, atoms, rcut):
+    def random_super_cell(self, atoms, rcut, min_cells = 2):
         """
         Args:
             atoms (Atoms):  input structure
             rcut (float): maximum distance for considering pairs of atoms
+            min_cells (tuple/list of ints): the minimum number of cells ( = N1 x N2 x N3) to include in the super_cell
         Returns:
             atoms_out (Atoms): new super cell
             
@@ -76,19 +78,18 @@ class PolymorphD3(object):
         up to the rcut for AMP.
         """
         
-        cell_ranges = compute_super_cell_needed_for_rcut(atoms, 
+        cell_max = compute_super_cell_needed_for_rcut(atoms, 
                                                          rcut = rcut)
+        rint = np.random.randint        
+
+        cells = [rint(1,cell_max[i]+1) for i in range(3)]
         
-        new_cells = []
-        for i in range(3):
-            line = [0,0,0]
-            line[i] = np.random.randint(1,cell_ranges[i])
-            new_cells.append(line)
+        # now we expand the duplication till we hit the min_cells
+        while cells[0]*cells[1]*cells[2] < min_cells:
+            cells[rint(0,3)]+=1
+
+        atoms_out = atoms.repeat(cells)
         
-        atoms_out = build.cut(atoms, 
-                              a = new_cells[0], 
-                              b = new_cells[1], 
-                              c = new_cells[2] )
         return(atoms_out)
     
     def random_deletion(self, atoms,  deletion_chance):
