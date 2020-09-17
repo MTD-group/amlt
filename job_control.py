@@ -91,6 +91,7 @@ def vasp_job_maker(name_prefix,
 
     twd = os.getcwd()
 
+    total_images = 0
     for job_type in jobs:
 
         job_type_dir = job_type[1] +'_' + job_type[2] +'/'
@@ -109,6 +110,7 @@ def vasp_job_maker(name_prefix,
             outputfile = 'OUTCAR'
 
         # now we can loop over structures
+        job_type_total_images = 0
         for structure_number in range(n_structures):
 
             struct_dir =job_type_dir + str(structure_number) +'/'
@@ -187,7 +189,10 @@ def vasp_job_maker(name_prefix,
                         images = []
                         print('%s was empty.'%(struct_dir + 'images.traj') )
                 print(struct_dir.ljust(25), '  has {:4d} images'.format(len(images)))
-
-
-
+                job_type_total_images += len(images)
+        
+        jtname = job_type[1] +'_' + job_type[2]
+        print(jtname + ' Subtotal images: %i\n'% job_type_total_images)
+        total_images += job_type_total_images
+    print('Total images: %i'%total_images)
 
