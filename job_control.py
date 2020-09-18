@@ -7,19 +7,6 @@ from ase import io
 from os.path import isfile
 
 
-#def outcar_to_traj(outcar_name = 'OUTCAR', traj_name='outcar.traj'):
-#    try:
-#        images = io.read(outcar_name, index = ':')
-#        my_traj = io.trajectory.Trajectory( traj_name, mode = 'w')
-#
-#        for atoms in images:
-#            my_traj.write(atoms = atoms)
-#        my_traj.close()
-#    except:
-#        print('OUTCAR conversion failed! File may be incomplete.')
-#        images = []
-#
-#    return images
 
 def convert_to_traj(filename, traj_name= 'images.traj'):
     try:
