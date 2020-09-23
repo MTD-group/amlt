@@ -160,9 +160,9 @@ def get_image_list( basedirs = [''],
         sum_total_atoms += len(image)
 
 
-    print('Total Number of Training Images:', total)
-    print('Total atoms: %i' % sum_total_atoms)
-    print('Time for file parsing is: {}'.format(time.time() - time1))
+    print('Total Number of Images:', total)
+    print('Total Atoms: %i' % sum_total_atoms)
+    print('Time for file parsing is: {:.3f} sec.'.format(time.time() - time1))
 
     if return_file_paths:
         return image_list, file_path_list
