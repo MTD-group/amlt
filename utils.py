@@ -36,6 +36,99 @@ def reorder_image_list_for_balanced_atom_counts(image_list, ncores = 4):
     
     
 
+# get_images_should rely on this function to reduce duplicate code
+
+def get_traj_file_list( basedirs = [''], 
+    traj_skip = 1, traj_skip_offset = 0,
+    traj_offset  = 0,
+    struct_types = [ 'random',   'known', 'polymorphD3'] ,
+    dyn_types    = [ 'md', 'relax', 'sp', 'ce', 'dimer'] ,
+    return_image_and_atom_counts = False):
+
+    from ase import io
+    from glob import glob
+    import time
+    import os
+    import numpy as np
+
+    
+       
+    def composition_str(sorted_elements, counts):
+        comp_format = '( '
+        for el, cnt in zip(sorted_elements, counts):
+            comp_format = comp_format + el + '_%i '%cnt
+        comp_format = comp_format + ')'
+
+        return comp_format
+
+
+    #def remove_force_drift(atoms):
+    #    forces = atoms.calc.results['forces']
+    #    drift = np.sum(forces,  axis = 0)/len(atoms)
+    #    atoms.calc.results['forces'] = forces-drift
+    #    #return drift
+
+
+    element_set = set()
+
+    traj_file_list = []
+    image_and_atom_counts = []
+    total = 0
+    total_atoms = 0
+    time1 = time.time()
+    for basedir in basedirs:
+        for struct_type in struct_types:
+            for dyn_type in dyn_types:    
+                top_direct = os.path.abspath( basedir)+ ('/%s_%s/')%(struct_type, dyn_type)
+                #print(top_direct)
+                if os.path.isdir(top_direct):
+                        print(top_direct)
+                        sub_total = 0
+                        sub_dirs = sorted(glob(top_direct+'*/'))
+                        #file_list.sort()
+                        sub_dirs.sort(key= lambda x: len(x))
+                        for sub_dir in sub_dirs:
+                            name = sub_dir.split('/')[-2]
+                            if name.isdigit():
+                            
+                                if int(name) >= traj_offset and int(name)%traj_skip == traj_skip_offset:
+                                    traj = io.Trajectory(filename = sub_dir  + 'images.traj', mode='r') #trying a read
+                                    traj_file_list.append(sub_dir+ 'images.traj')
+                                    
+                                    
+                                    if True: #we'll need a conditional here related to un needed parsing for making this general
+                                        print (sub_dir.ljust(22), end = '')
+                                        # for printing the compositions
+                                        symbols = traj[0].get_chemical_symbols()
+                                        element_set.update(symbols)
+                                        sorted_elements = sorted(list(element_set))
+                                        comp = [ symbols.count(el) for el in sorted_elements]
+                                        comp_format = composition_str(sorted_elements, comp)
+                                        
+                                        image_and_atom_counts.append( (len(traj), len(traj[0])) )
+                                        
+                                        subsub_total = len(traj)
+                                        total_atoms += len(traj)*len(traj[0])
+                                        print(  (' atoms %i'%len(traj[0])).ljust(12) + \
+                                                ('images found %i '%subsub_total).ljust(24) + \
+                                                comp_format )
+
+                                    sub_total += len(traj)
+                                    traj.close()
+                        # subtotal for this struct+dyn_type
+                        print('sub_total: %i \n'% sub_total)
+                        total+=sub_total
+
+
+
+    print('Total Number of Images:', total)
+    print('Total Atoms: %i' % total_atoms)
+    print('Time for file parsing is: {:.3f} sec.'.format(time.time() - time1))
+
+    if return_image_and_atom_counts:
+        return traj_file_list, np.array(image_and_atom_counts)
+    else:
+        return traj_file_list
 
 
 
