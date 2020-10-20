@@ -140,6 +140,7 @@ def get_image_list( basedirs = [''],
     struct_types = [ 'random',   'known', 'polymorphD3'] ,
     dyn_types    = [ 'md', 'relax', 'sp', 'ce', 'dimer'] ,
     max_energy_per_atom = None, max_force_on_atom = None,
+    max_energy_deviation_per_atom = None,
     remove_force_drift_in_training_data = True, return_file_paths = False):
 
     from ase import io
@@ -176,6 +177,8 @@ def get_image_list( basedirs = [''],
         for struct_type in struct_types:
             for dyn_type in dyn_types:    
                 top_direct = os.path.abspath( basedir)+ ('/%s_%s/')%(struct_type, dyn_type)
+                #if dyn_type == 'ce':
+                    
                 #print(top_direct)
                 if os.path.isdir(top_direct):
                         print(top_direct)
@@ -191,6 +194,13 @@ def get_image_list( basedirs = [''],
                                     traj = io.Trajectory(filename = sub_dir  + 'images.traj', mode='r')
                                     subsub_total = 0
                                     
+
+                                    if dyn_type =='ce':
+                                        ce_data = np.loadtxt(sub_dir + 'ce.log', skiprows = 2).T
+                                        ce_endev = ce_data[-1]
+
+
+
                                     print (sub_dir.ljust(22), end = '')
                                     # for printing the compositions
                                     symbols = traj[0].get_chemical_symbols()
@@ -225,6 +235,10 @@ def get_image_list( basedirs = [''],
                                                 if max_force > max_force_on_atom:
                                                     training_image = False
                                                     print('image', image_index, 'Max Force too high:', max_force)
+                                            if dyn_type == 'ce' and max_energy_deviation_per_atom is not None:
+                                                if abs(ce_endev[image_index]) > max_energy_deviation_per_atom:
+                                                    training_image = False
+                                                    print('image',image_index, 'CE energy deviation too high:', ce_endev[image_index])
                                         #if (int(name) in bad_polymorphs) and struct_type == 'polymorphD3' :
                                         #    training_image = False
 
