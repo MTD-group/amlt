@@ -2,36 +2,36 @@
 
 
 def get_kpts_from_kpd(atoms, kpd, only_even = False, show_kpts = True, atol = 1e-1 ):
-    import numpy as np
-    #kpd = kpoint_density
     
     if only_even:
         step = 2
     else:
         step = 1
     
-    rcell = atoms.get_reciprocal_cell()
-    rlengths = [np.linalg.norm(rcell[i]) for i in range(3)]
-    lengths = atoms.get_cell_lengths_and_angles()[0:3]
-    
+    # tries to keep equi-planar spacing in k-space to match a KPD
+    import numpy as np
+    kpd = kpoint_density
+    lengths_angles = atoms.get_cell_lengths_and_angles()
     vol = atoms.get_volume()
-    min_kpts = kpd/vol # BZ volume = 1/cell volume (without 2pi factors)
-    
-    if False:
-        linear_density = (min_kpts  /( rlengths[0] * rlengths[1] * rlengths[2])) ** (1 / 3)
-    else:
-        mult = (min_kpts  * lengths[0] * lengths[1] * lengths[2]) ** (1 / 3)
+    lengths = lengths_angles[0:3]
+    ngrid = kpd/vol # BZ volume = 1/cell volume (without 2pi factors)
+    plane_density_mean = (ngrid * lengths[0] * lengths[1] * lengths[2]) ** (1 / 3)
 
-        nkpt_frac  = np.zeros(3)
-        for i, l in enumerate(lengths):
-            nkpt_frac[i] = max(mult / l, step)
+    nkpt_frac  = np.zeros(3)
+    for i, l in enumerate(lengths):
+        nkpt_frac[i] = max(plane_density_mean / l, 1)
         
-    nkpt       = np.floor(nkpt_frac/step)*step
-    delta_ceil = np.ceil(nkpt_frac/step) *step - nkpt_frac # measure of which axes are closer to a whole number
-
+    nkpt       = np.floor(nkpt_frac)
     actual_kpd = vol * nkpt[0]*nkpt[1]*nkpt[2]
-
-    check_order = np.argsort(delta_ceil) # we do this so we keep the grid as even as possible only rounding up when they are close
+    
+    if True:
+        plane_densities = lengths*nkpt
+        #print(plane_densities)
+        # we want to start with the largest plane spacing, not the one closest to another integer
+        check_order = np.argsort( plane_densities)
+    else:
+        delta_ceil = np.ceil(nkpt_frac)-nkpt_frac # measure of which axes are closer to a whole number
+        check_order = np.argsort(delta_ceil) # we do this so we keep the grid as even as possible only rounding up when they are close
 
     
 
@@ -81,6 +81,7 @@ def get_kpts_from_kpd(atoms, kpd, only_even = False, show_kpts = True, atol = 1e
 
 def safe_kgrid_from_cell_volume(atoms, kpoint_density):
     import numpy as np
+    print( "safe_kgrid_from_cell_volume is depricated, use get_kpts_from_kpd" )
     kpd = kpoint_density
     lengths_angles = atoms.get_cell_lengths_and_angles()
     vol = atoms.get_volume()
