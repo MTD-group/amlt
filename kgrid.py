@@ -10,7 +10,7 @@ def get_kpts_from_kpd(atoms, kpd, only_even = False, show_kpts = True, atol = 1e
     
     # tries to keep equi-planar spacing in k-space to match a KPD
     import numpy as np
-    kpd = kpoint_density
+    #kpd = kpoint_density
     lengths_angles = atoms.get_cell_lengths_and_angles()
     vol = atoms.get_volume()
     lengths = lengths_angles[0:3]
@@ -71,7 +71,7 @@ def get_kpts_from_kpd(atoms, kpd, only_even = False, show_kpts = True, atol = 1e
         print('kgrid: %i x %i x %i'%tuple(kpts))
         print('kpd target: %.3f, actual kpd: %.3f'%(kpd, actual_kpd))
         for i in range(3):
-            print('kvec%i density: %.3f' %(i,kpts[i]/rlengths[i]))
+            print('k-plane %i kpd: %.3f' %(i,kpts[i]*lengths[i]))
     return kpts
 
 
