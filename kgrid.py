@@ -11,7 +11,7 @@ def get_kpts_from_kpd(atoms, kpd, only_even = False, show_kpts = True, atol = 1e
     # tries to keep equi-planar spacing in k-space to match a KPD
     import numpy as np
     #kpd = kpoint_density
-    lengths_angles = atoms.get_cell_lengths_and_angles()
+    lengths_angles = atoms.cell.cellpar()
     vol = atoms.get_volume()
     lengths = lengths_angles[0:3]
     ngrid = kpd/vol # BZ volume = 1/cell volume (without 2pi factors)
