@@ -76,12 +76,15 @@ def get_kpts_from_kpd(atoms, kpd, only_even = False, show_kpts = True, atol = 1e
 
 
 
+import warnings
 
 
 
 def safe_kgrid_from_cell_volume(atoms, kpoint_density):
     import numpy as np
     print( "safe_kgrid_from_cell_volume is depricated, use get_kpts_from_kpd" )
+    warnings.warn("safe_kgrid_from_cell_volume is depricated, use get_kpts_from_kpd", DeprecationWarning)
+
     kpd = kpoint_density
     lengths_angles = atoms.get_cell_lengths_and_angles()
     vol = atoms.get_volume()
