@@ -2,21 +2,23 @@ import numpy as np
 
 from ase.optimize.optimize import Dynamics
 from numpy.random import random
+import time
 
 class contour_exploration(Dynamics):
     def __init__(self, atoms, 
-                step_size = 0.5,
+                maxstep = 0.5,
                 parallel_drift = 0.2,
                 energy_target = None,
+                angle_limit = None,
                 force_parallel_step_scale = None,
                 remove_translation = False,
                 use_FS = True,
                 initialize_old = True, initialization_step_scale = 1e-2,
                 use_target_shift = True, target_shift_previous_steps = 10,
-                angle_limiting_max_step = None,
                 seed = 60622,
                 verbose = False, 
                 trajectory=None, logfile=None,
+                force_consistent=None,
                 append_trajectory=False, loginterval=1):
 
         '''Perpendicular drift breaks orbits like dimer form, so they spin on new axes'''
@@ -33,6 +35,8 @@ class contour_exploration(Dynamics):
         self.seed = seed
         self.remove_translation = remove_translation
         self.use_FS = use_FS
+        self.force_consistent = force_consistent
+        self.kappa = 0.0 # initializing so logging can work
         #### for FS taylor expansion
         self.T = None
         self.Told = None
@@ -42,11 +46,10 @@ class contour_exploration(Dynamics):
         
         self.r_old = None
         self.r     = None
-
         #########
 
         if energy_target == None:
-            self.energy_target = atoms.get_potential_energy()
+            self.energy_target = atoms.get_potential_energy(force_consistent = self.force_consistent)
         else:
             self.energy_target = energy_target
 
@@ -65,8 +68,8 @@ class contour_exploration(Dynamics):
 
 
         if initialize_old:
-            self.step_size     = step_size*initialization_step_scale
-            self.max_step_size = step_size*initialization_step_scale
+            self.step_size  = maxstep*initialization_step_scale
+            self.maxstep    = maxstep*initialization_step_scale
             self.parallel_drift = 0.0
             ## should this be 0.0 for a better initial curvature?
             ## Or at least smaller than 1.0? doesn't seem to matter much
@@ -76,12 +79,13 @@ class contour_exploration(Dynamics):
             self.step()
 
         
-        self.step_size     = step_size
-        self.max_step_size = step_size
-        self.angle_limiting_max_step = angle_limiting_max_step
+        self.step_size = maxstep
+        self.maxstep   = maxstep
+        self.angle_limit = angle_limit
         self.parallel_drift = parallel_drift
         self.force_parallel_step_scale = FPSS
         self.use_target_shift = use_target_shift
+        
         
         ## initizing the previous steps at the target energy slows 
         ## target shifting untill the system has had 
@@ -91,7 +95,7 @@ class contour_exploration(Dynamics):
         
         #print(self.previous_energies)
         
-        ## loginterval exists for the MolecularDynamics classe but not the more
+        ## loginterval exists for the MolecularDynamics class but not the more
         ## general Dynamics class
         Dynamics.__init__(self, atoms,
                                 logfile, trajectory, #loginterval,
@@ -115,10 +119,32 @@ class contour_exploration(Dynamics):
         self.max_steps = steps + self.nsteps
         return Dynamics.run(self)
 
-
+    # do I need this for CED?
     def converged(self):
         """ MD is 'converged' when number of maximum steps is reached. """
         return self.nsteps >= self.max_steps
+
+
+    def log(self ):
+
+        #T = time.localtime() # time logging seems silly
+        if self.logfile is not None:
+            name = self.__class__.__name__
+            if self.nsteps == 0:
+                #args = (" " * len(name), "Step", "Energy_Target", "Energy", "Radius", "Step_Size", "Energy_Deviation_per_atom")
+                args = ("Step", "Energy_Target", "Energy", "Curvature", "Step_Size", "Energy_Deviation_per_atom")
+                msg = "# %4s %15s %15s %12s %12s %15s\n" % args
+                self.logfile.write(msg)
+            #args = (name, self.nsteps, T[3], T[4], T[5], e, ast, fmax)
+            #msg = "%s:  %3d %02d:%02d:%02d %15.6f%1s %12.4f\n" % args
+            
+            e = self.atoms.get_potential_energy(force_consistent =  self.force_consistent )
+            dev_per_atom = (e-self.energy_target)/len(self.atoms)
+            args = ( self.nsteps, self.energy_target, e, self.kappa, self.step_size, dev_per_atom)
+            msg = "%6d %15.6f %15.6f %12.6f %12.6f %24.9f\n" % args
+            self.logfile.write(msg)
+
+            self.logfile.flush()
 
 
     ### CED specific stuff
@@ -142,7 +168,7 @@ class contour_exploration(Dynamics):
             f = atoms.get_forces()
 
         self.r = atoms.get_positions()
-        current_energy = atoms.get_potential_energy()
+        current_energy = atoms.get_potential_energy(force_consistent = self.force_consistent)
 
         ## update our history of self.previous_energies to include
         ## our current energy
@@ -191,7 +217,7 @@ class contour_exploration(Dynamics):
 
 
             # Without the use of curvature there is no way to estimate the limiting step size
-            self.step_size = self.max_step_size
+            self.step_size = self.maxstep
 
 
             if abs(delta_s_perpendicular) < self.step_size:
@@ -219,13 +245,14 @@ class contour_exploration(Dynamics):
             dNds = delta_N/delta_s
             #kappa_T = np.linalg.norm(dTds)
             kappa = np.linalg.norm(dNds) # normals are better since they are fixed to the reality of forces
+            self.kappa = kappa
             Nfs = dTds/kappa
 
-            if self.angle_limiting_max_step is not None:
+            if self.angle_limit is not None:
             
-                phi = np.pi/180*self.angle_limiting_max_step
+                phi = np.pi/180*self.angle_limit
                 self.step_size = np.sqrt(2-2*np.cos(phi))/kappa
-                self.step_size = min(self.step_size, self.max_step_size)
+                self.step_size = min(self.step_size, self.maxstep)
 
 
             if debug:
