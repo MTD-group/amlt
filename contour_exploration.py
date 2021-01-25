@@ -13,6 +13,7 @@ class contour_exploration(Dynamics):
                 use_FS = True,
                 initialize_old = True, initialization_step_scale = 1e-2,
                 use_target_shift = True, target_shift_previous_steps = 10,
+                angle_limiting_max_step = None,
                 seed = 60622,
                 verbose = False, 
                 trajectory=None, logfile=None,
@@ -64,7 +65,8 @@ class contour_exploration(Dynamics):
 
 
         if initialize_old:
-            self.step_size = step_size*initialization_step_scale
+            self.step_size     = step_size*initialization_step_scale
+            self.max_step_size = step_size*initialization_step_scale
             self.parallel_drift = 0.0
             ## should this be 0.0 for a better initial curvature?
             ## Or at least smaller than 1.0? doesn't seem to matter much
@@ -73,7 +75,10 @@ class contour_exploration(Dynamics):
             self.atoms = atoms
             self.step()
 
-        self.step_size = step_size
+        
+        self.step_size     = step_size
+        self.max_step_size = step_size
+        self.angle_limiting_max_step = angle_limiting_max_step
         self.parallel_drift = parallel_drift
         self.force_parallel_step_scale = FPSS
         self.use_target_shift = use_target_shift
@@ -185,6 +190,10 @@ class contour_exploration(Dynamics):
             D = self.unit_vect(w_drift)
 
 
+            # Without the use of curvature there is no way to estimate the limiting step size
+            self.step_size = self.max_step_size
+
+
             if abs(delta_s_perpendicular) < self.step_size:
                 contour_step_size = np.sqrt(self.step_size**2 - delta_s_perpendicular**2 )
 
@@ -194,6 +203,7 @@ class contour_exploration(Dynamics):
                 dr = parallel_vector + drift_vector + w_perpendicular
             else:
                 dr = self.step_size/abs(delta_s_perpendicular) * w_perpendicular
+
 
         else:
 
@@ -208,8 +218,15 @@ class contour_exploration(Dynamics):
             dTds = delta_T/delta_s
             dNds = delta_N/delta_s
             #kappa_T = np.linalg.norm(dTds)
-            kappa = np.linalg.norm(dNds) # normals are better since they are fixed to reality
+            kappa = np.linalg.norm(dNds) # normals are better since they are fixed to the reality of forces
             Nfs = dTds/kappa
+
+            if self.angle_limiting_max_step is not None:
+            
+                phi = np.pi/180*self.angle_limiting_max_step
+                self.step_size = np.sqrt(2-2*np.cos(phi))/kappa
+                self.step_size = min(self.step_size, self.max_step_size)
+
 
             if debug:
                 print('Told\n' , self.Told)
