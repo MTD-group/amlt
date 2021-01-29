@@ -18,6 +18,7 @@ class contour_exploration(Dynamics):
                 seed = 60622,
                 verbose = False, 
                 trajectory=None, logfile=None,
+                use_tangent_curvature = False,
                 force_consistent=None,
                 append_trajectory=False, loginterval=1):
 
@@ -37,6 +38,7 @@ class contour_exploration(Dynamics):
         self.use_FS = use_FS
         self.force_consistent = force_consistent
         self.kappa = 0.0 # initializing so logging can work
+        self.use_tangent_curvature = use_tangent_curvature
         #### for FS taylor expansion
         self.T = None
         self.Told = None
@@ -243,9 +245,16 @@ class contour_exploration(Dynamics):
             delta_N = self.N - self.Nold
             dTds = delta_T/delta_s
             dNds = delta_N/delta_s
-            #kappa_T = np.linalg.norm(dTds)
-            kappa = np.linalg.norm(dNds) # normals are better since they are fixed to the reality of forces
+            if self.use_tangent_curvature:
+                kappa = np.linalg.norm(dTds)
+            else:
+                # normals are better since they are fixed to the reality of forces
+                # I see smaller forces and energy errors in bulk systems with normals
+                kappa = np.linalg.norm(dNds) 
             self.kappa = kappa
+            
+            # on a perfect trajectory, the normal can be computed this way, 
+            # I think the normal should always be tied to forces
             Nfs = dTds/kappa
 
             if self.angle_limit is not None:
@@ -253,7 +262,6 @@ class contour_exploration(Dynamics):
                 phi = np.pi/180*self.angle_limit
                 self.step_size = np.sqrt(2-2*np.cos(phi))/kappa
                 self.step_size = min(self.step_size, self.maxstep)
-
 
             if debug:
                 print('Told\n' , self.Told)
