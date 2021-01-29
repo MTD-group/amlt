@@ -1,7 +1,6 @@
 import numpy as np
-
+from numpy.random import default_rng
 from ase.optimize.optimize import Dynamics
-from numpy.random import random
 import time
 
 class contour_exploration(Dynamics):
@@ -15,7 +14,7 @@ class contour_exploration(Dynamics):
                 use_FS = True,
                 initialize_old = True, initialization_step_scale = 1e-2,
                 use_target_shift = True, target_shift_previous_steps = 10,
-                seed = 60622,
+                seed = 19460926, 
                 verbose = False, 
                 trajectory=None, logfile=None,
                 use_tangent_curvature = False,
@@ -48,8 +47,10 @@ class contour_exploration(Dynamics):
         
         self.r_old = None
         self.r     = None
-        #########
+        ###### initialize rng
+        self.rng = default_rng(seed)
 
+        #######
         if energy_target == None:
             self.energy_target = atoms.get_potential_energy(force_consistent = self.force_consistent)
         else:
@@ -63,10 +64,14 @@ class contour_exploration(Dynamics):
         masses = atoms.get_masses()[:, np.newaxis]
         v = p/masses
         from ase import units
-        if self.dot(v,v) < 1e-6:
-            from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
-            MaxwellBoltzmannDistribution(atoms, 300 * units.kB)
-            print("No Velocities found, random ones applied")
+        if np.linalg.norm(v) < 1e-6:
+            ### maxwell boltzman is fine for most cases, but unit testing, 
+            ### we want deterministic results
+            #from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
+            #MaxwellBoltzmannDistribution(atoms, 300 * units.kB)
+            v = self.rand_vect()
+            atoms.set_momenta(v/masses)
+            print("No Velocities found, random velocities applied")
 
 
         if initialize_old:
@@ -161,6 +166,14 @@ class contour_exploration(Dynamics):
 
     def unit_vect(self,a):
         return a / np.linalg.norm(a)
+        
+    def rand_vect(self,dims=None):
+        if dims is None:
+            vect = self.rng.random((len(self.atoms), 3))
+        else:
+            vect =  self.rng.random(dims)
+        return vect
+        
 
     def step(self, f=None):
         debug = False
@@ -211,7 +224,7 @@ class contour_exploration(Dynamics):
             w_perpendicular =  self.N * delta_s_perpendicular
 
             # create drift unit with no projection on N or T
-            w_drift = random((len(atoms),3))
+            w_drift = self.rand_vect()
             w_drift = self.vector_rejection(w_drift,self.N)
             w_drift = self.vector_rejection(w_drift,self.T)
             w_drift = w_drift - w_drift.sum(axis = 0)/len(atoms) # removes wandering so systems don't wander
@@ -293,7 +306,7 @@ class contour_exploration(Dynamics):
                 w_parallel = delta_s_parallel * self.T * (1 - (delta_s_parallel * kappa)**2/6.0) \
                             + self.N * kappa/2 * delta_s_parallel**2
                 #########
-                drift = random((len(atoms),3))
+                drift = self.rand_vect()
                 drift = self.vector_rejection(drift,N_guess)
                 drift = self.vector_rejection(drift,T_guess)
                 # removes net translation, so systems don't wander
