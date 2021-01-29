@@ -69,7 +69,7 @@ class contour_exploration(Dynamics):
             ### we want deterministic results
             #from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
             #MaxwellBoltzmannDistribution(atoms, 300 * units.kB)
-            v = self.rand_vect()
+            v = self.rand_vect((len(atoms),3)) # we have to pass dimension since atoms are not yet stored
             atoms.set_momenta(v/masses)
             print("No Velocities found, random velocities applied")
 
@@ -363,9 +363,13 @@ class contour_exploration(Dynamics):
         f = atoms.get_forces(md=True)
         
 
+        ## set new velocities perpendicular so they get logged properly in the trajectory files
+        masses = atoms.get_masses()[:, np.newaxis]
+        vnew = self.vector_rejection( atoms.get_momenta()/masses, f)
+        pnew = vnew * masses
+        
         ## rescaling momentum to maintain constant kinetic energy!
-        pnew = atoms.get_momenta()
-        KEnew = atoms.get_kinetic_energy()
+        KEnew = 0.5 * np.vdot(pnew, vnew)
         Ms = np.sqrt(KEold/KEnew) #Ms = Momentum_scale
         atoms.set_momenta(Ms*pnew)
 
