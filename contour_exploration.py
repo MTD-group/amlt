@@ -362,16 +362,20 @@ class contour_exploration(Dynamics):
         ## Now we get the new forces! 
         f = atoms.get_forces(md=True)
         
-
-        ## set new velocities perpendicular so they get logged properly in the trajectory files
-        masses = atoms.get_masses()[:, np.newaxis]
-        vnew = self.vector_rejection( atoms.get_momenta()/masses, f)
-        pnew = vnew * masses
         
-        ## rescaling momentum to maintain constant kinetic energy!
-        KEnew = 0.5 * np.vdot(pnew, vnew)
+        ####### I don't really know if removing md=True from above will break compatibility.
+        f_constrained = atoms.get_forces()
+        # but this projection needs the forces to be consistent with the constraints. 
+        
+        ## set new velocities perpendicular so they get logged properly in the trajectory files
+        vnew = self.vector_rejection( atoms.get_momenta()/masses, f_constrained)
+        #vnew = self.vector_rejection(atoms.get_velocities(), f)
+        atoms.set_momenta(vnew*masses)
+        
+        ## rescaling momentum to maintain constant kinetic energy.
+        KEnew = atoms.get_kinetic_energy()
         Ms = np.sqrt(KEold/KEnew) #Ms = Momentum_scale
-        atoms.set_momenta(Ms*pnew)
+        atoms.set_momenta(Ms*atoms.get_momenta())
 
         ### Normally this would be the second part of RATTLE will be done here like this:
         ### atoms.set_momenta(atoms.get_momenta() + 0.5 * self.dt * f)
