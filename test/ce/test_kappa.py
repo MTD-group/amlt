@@ -1,3 +1,5 @@
+#this test ensures that the computed PEC curvature matched the actual geometry
+
 import pytest
 from ase import Atoms
 from amlt import contour_exploration

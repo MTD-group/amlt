@@ -1,3 +1,5 @@
+#this test ensures that we can stay on (near) the PEC 
+
 import pytest
 from ase.lattice.cubic import FaceCenteredCubic
 from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
@@ -26,7 +28,7 @@ def test_potentiostat():
 
     initial_energy = atoms.get_potential_energy()
 
-    print("Energy Above Ground State: {: .4f} eV/atoms".format(
+    print("Energy Above Ground State: {: .4f} eV/atom".format(
         (initial_energy-E0)/len(atoms)))
 
     name = 'test_potentiostat'

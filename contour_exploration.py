@@ -51,12 +51,19 @@ class contour_exploration(Dynamics):
         self.rng = default_rng(seed)
 
         #######
-        if energy_target == None:
+        if energy_target is None:
             self.energy_target = atoms.get_potential_energy(force_consistent = self.force_consistent)
         else:
             self.energy_target = energy_target
 
+        # these need to be initialized before the initialize_old step so it doesn't crash
         self.previous_energies = np.zeros(target_shift_previous_steps)
+        ## initizing the previous steps at the target energy slows 
+        ## target shifting untill the system has had 
+        ## 'baseline_shift_previous_steps' steps to equilibrate 
+        ## this should prevent occilations
+        self.previous_energies.fill(self.energy_target)
+
 
         # we need velocities or this won't run and will produce NaNs,
         # if none are provided we make random ones
@@ -75,18 +82,19 @@ class contour_exploration(Dynamics):
 
 
         if initialize_old:
-            self.step_size  = maxstep*initialization_step_scale
+            #self.step_size  = maxstep*initialization_step_scale
             self.maxstep    = maxstep*initialization_step_scale
             self.parallel_drift = 0.0
-            ## should this be 0.0 for a better initial curvature?
+            ## should force_parallel_step_scale be 0.0 for a better initial curvature?
             ## Or at least smaller than 1.0? doesn't seem to matter much
             self.force_parallel_step_scale = 1.0 
             self.use_target_shift = False
             self.atoms = atoms
             self.step()
+            
 
         
-        self.step_size = maxstep
+        #self.step_size = maxstep # this interfers with logging
         self.maxstep   = maxstep
         self.angle_limit = angle_limit
         self.parallel_drift = parallel_drift
@@ -94,11 +102,6 @@ class contour_exploration(Dynamics):
         self.use_target_shift = use_target_shift
         
         
-        ## initizing the previous steps at the target energy slows 
-        ## target shifting untill the system has had 
-        ## 'baseline_shift_previous_steps' steps to equilibrate 
-        ## this should prevent occilations
-        self.previous_energies.fill(energy_target)
         
         #print(self.previous_energies)
         
@@ -353,6 +356,8 @@ class contour_exploration(Dynamics):
         atoms.set_positions(self.r + dr)
         p = (atoms.get_positions() - self.r) * masses #/ self.dt
 
+        # rescale momentum to KEold to get the net momentum??
+
         # We need to store the momenta on the atoms before calculating
         # the forces, as in a parallel Asap calculation atoms may
         # migrate during force calculations, and the momenta need to
@@ -366,6 +371,8 @@ class contour_exploration(Dynamics):
         ####### I don't really know if removing md=True from above will break compatibility.
         f_constrained = atoms.get_forces()
         # but this projection needs the forces to be consistent with the constraints. 
+        
+        
         
         ## set new velocities perpendicular so they get logged properly in the trajectory files
         vnew = self.vector_rejection( atoms.get_momenta()/masses, f_constrained)
