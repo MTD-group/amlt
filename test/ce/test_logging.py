@@ -1,4 +1,4 @@
-#this test ensures that we can stay on (near) the PEC 
+#this test ensures that logging is working
 
 import pytest
 from ase.lattice.cubic import FaceCenteredCubic
