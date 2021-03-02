@@ -60,7 +60,7 @@ class contour_exploration(Dynamics):
         self.previous_energies = np.zeros(target_shift_previous_steps)
         ## initizing the previous steps at the target energy slows 
         ## target shifting untill the system has had 
-        ## 'baseline_shift_previous_steps' steps to equilibrate 
+        ## 'target_shift_previous_steps' steps to equilibrate 
         ## this should prevent occilations
         self.previous_energies.fill(self.energy_target)
 
@@ -72,11 +72,8 @@ class contour_exploration(Dynamics):
         v = p/masses
         from ase import units
         if np.linalg.norm(v) < 1e-6:
-            ### maxwell boltzman is fine for most cases, but unit testing, 
-            ### we want deterministic results
-            #from ase.md.velocitydistribution import MaxwellBoltzmannDistribution
-            #MaxwellBoltzmannDistribution(atoms, 300 * units.kB)
-            v = self.rand_vect((len(atoms),3)) # we have to pass dimension since atoms are not yet stored
+            # we have to pass dimension since atoms are not yet stored
+            v = self.rand_vect((len(atoms),3)) 
             atoms.set_momenta(v/masses)
             print("No Velocities found, random velocities applied")
 
@@ -92,18 +89,12 @@ class contour_exploration(Dynamics):
             self.atoms = atoms
             self.step()
             
-
-        
         #self.step_size = maxstep # this interfers with logging
         self.maxstep   = maxstep
         self.angle_limit = angle_limit
         self.parallel_drift = parallel_drift
         self.force_parallel_step_scale = FPSS
         self.use_target_shift = use_target_shift
-        
-        
-        
-        #print(self.previous_energies)
         
         ## loginterval exists for the MolecularDynamics class but not the more
         ## general Dynamics class
@@ -179,7 +170,6 @@ class contour_exploration(Dynamics):
         
 
     def step(self, f=None):
-        debug = False
         atoms = self.atoms
 
         if f is None:
@@ -217,40 +207,43 @@ class contour_exploration(Dynamics):
         delta_s_perpendicular =  (deltaU/f_norm)* self.force_parallel_step_scale # can be positive or negative
         
         # remove velocity  projection on forces
-        w_parallel = self.vector_rejection(v,self.N)
-        self.T = self.unit_vect(w_parallel)
+        v_parallel = self.vector_rejection(v,self.N)
+        self.T = self.unit_vect(v_parallel)
         ### 
 
         if self.Nold is None or self.use_FS == False: 
             # we cannot apply the FS taylor expansion without a previous point
             # so we do a dumb jump to start
-            w_perpendicular =  self.N * delta_s_perpendicular
-
-            # create drift unit with no projection on N or T
-            w_drift = self.rand_vect()
-            w_drift = self.vector_rejection(w_drift,self.N)
-            w_drift = self.vector_rejection(w_drift,self.T)
-            w_drift = w_drift - w_drift.sum(axis = 0)/len(atoms) # removes wandering so systems don't wander
-            D = self.unit_vect(w_drift)
-
+            dr_perpendicular =  self.N * delta_s_perpendicular
 
             # Without the use of curvature there is no way to estimate the limiting step size
             self.step_size = self.maxstep
 
-
             if abs(delta_s_perpendicular) < self.step_size:
                 contour_step_size = np.sqrt(self.step_size**2 - delta_s_perpendicular**2 )
 
-                drift_vector    = contour_step_size * self.parallel_drift * D
-                parallel_vector = contour_step_size * np.sqrt(1- self.parallel_drift**2)*  self.T
-
-                dr = parallel_vector + drift_vector + w_perpendicular
+                delta_s_parallel = np.sqrt(1- self.parallel_drift**2) * contour_step_size
+                dr_parallel = delta_s_parallel*self.T
+                delta_s_drift    = contour_step_size*self.parallel_drift
+                
+                # create drift unit with no projection on N or T
+                drift = self.rand_vect()
+                drift = self.vector_rejection(drift,self.N)
+                drift = self.vector_rejection(drift,self.T)
+                # removes net translation, so systems don't wander
+                drift = drift - drift.sum(axis = 0)/len(atoms) 
+                D = self.unit_vect(drift)
+                dr_drift = D*delta_s_drift
+                ###
+                
+                dr = dr_parallel + dr_drift + dr_perpendicular
             else:
-                dr = self.step_size/abs(delta_s_perpendicular) * w_perpendicular
+                delta_s_parallel = 0.0
+                delta_s_drift    = 0.0
+                dr = self.step_size/abs(delta_s_perpendicular) * dr_perpendicular
 
 
         else:
-
              ####################  Frenet–Serret formulas
             # this should keep the dr clear of the constraints
             delta_r = self.r - self.rold
@@ -274,66 +267,54 @@ class contour_exploration(Dynamics):
             Nfs = dTds/kappa
 
             if self.angle_limit is not None:
-            
                 phi = np.pi/180*self.angle_limit
                 self.step_size = np.sqrt(2-2*np.cos(phi))/kappa
                 self.step_size = min(self.step_size, self.maxstep)
-
-            if debug:
-                print('Told\n' , self.Told)
-                print('T\n' , self.T)
-                
-                print('Nold\n', self.Nold)
-                print('N\n', self.N)
-                print('Nfs\n', Nfs)
             
             if self.verbose:
-                print('Curvature, kappa' , kappa, 'Radius, 1/kappa', 1/kappa)
+                print('Curvature, kappa' , kappa, 'Radius, (1/kappa)', 1/kappa)
                 print('T.Nfs', self.dot( self.T, Nfs), 'N.Nfs', self.dot(self.N,Nfs))
             
-            
-            if abs(delta_s_perpendicular) < self.step_size:
+            #### computing step
+            if abs(delta_s_perpendicular) < self.step_size: 
                 contour_step_size = np.sqrt(self.step_size**2 - delta_s_perpendicular**2 )
                 delta_s_parallel = np.sqrt(1- self.parallel_drift**2) * contour_step_size
                 delta_s_drift    = contour_step_size*self.parallel_drift
                 
-                if self.verbose:
-                    print('step_size %f in (perpendicular), [parallel], {drift}: (%f) [%f] {%f}' % \
-                        (self.step_size, delta_s_perpendicular,delta_s_parallel, delta_s_drift))
-                
                 N_guess = self.N + dNds* delta_s_parallel
                 T_guess = self.T + dTds* delta_s_parallel
                 
-                w_perpendicular = delta_s_perpendicular*( N_guess)
+                dr_perpendicular = delta_s_perpendicular*( N_guess)
                 
-                w_parallel = delta_s_parallel * self.T * (1 - (delta_s_parallel * kappa)**2/6.0) \
+                dr_parallel = delta_s_parallel * self.T * (1 - (delta_s_parallel * kappa)**2/6.0) \
                             + self.N * kappa/2 * delta_s_parallel**2
-                #########
+                #### Drift vector
                 drift = self.rand_vect()
                 drift = self.vector_rejection(drift,N_guess)
                 drift = self.vector_rejection(drift,T_guess)
                 # removes net translation, so systems don't wander
                 drift = drift - drift.sum(axis = 0)/len(atoms) 
                 D = self.unit_vect(drift)
-                w_drift = D*delta_s_drift
-                #########
-
-                if debug:
-                    print('Tguess\n', T_guess)
-                    print('Nguess\n', N_guess)
-                    print('w_perpendicular\n',w_perpendicular)
-                    print('w_parallel\n',w_parallel)
-                    print('w_drift\n',w_drift)
-
-
-                dr = w_perpendicular + w_parallel + w_drift
+                dr_drift = D*delta_s_drift
+                
+                ##### combine the components
+                dr = dr_perpendicular + dr_parallel + dr_drift
                 dr = self.step_size * self.unit_vect(dr) 
                 # because we guess our orthonormalization directions, 
-                # we should renormalize to ensure a correct step size 
-            else:
-                w_perpendicular =  self.N * delta_s_perpendicular
-                dr = self.step_size/abs(delta_s_perpendicular) * w_perpendicular
-            
+                # we renormalize to ensure a correct step size 
+                
+            else: 
+                # in this case all priority goes to potentiostat terms
+                delta_s_parallel = 0.0
+                delta_s_drift    = 0.0
+                dr_perpendicular =  self.N * delta_s_perpendicular
+                dr = self.step_size/abs(delta_s_perpendicular) * dr_perpendicular
+        
+        
+        if self.verbose:
+            print('step_size %f in (perpendicular), [parallel], {drift}: (%f) [%f] {%f}' % \
+                    (self.step_size, delta_s_perpendicular,delta_s_parallel, delta_s_drift))
+        
         ## now that dr is done, we check if there is translation
         if self.remove_translation:
             net_motion = dr.sum(axis = 0)/len(atoms)
@@ -341,8 +322,6 @@ class contour_exploration(Dynamics):
             dr = dr - net_motion
             dr_unit = dr/np.linalg.norm(dr)
             dr = dr_unit*self.step_size
-
-
 
         ##  save old positions before update
         self.Told = self.T
@@ -355,8 +334,6 @@ class contour_exploration(Dynamics):
         # RATTLE algorithm:
         atoms.set_positions(self.r + dr)
         p = (atoms.get_positions() - self.r) * masses #/ self.dt
-
-        # rescale momentum to KEold to get the net momentum??
 
         # We need to store the momenta on the atoms before calculating
         # the forces, as in a parallel Asap calculation atoms may
@@ -371,9 +348,6 @@ class contour_exploration(Dynamics):
         ####### I don't really know if removing md=True from above will break compatibility.
         f_constrained = atoms.get_forces()
         # but this projection needs the forces to be consistent with the constraints. 
-        
-        
-        
         ## set new velocities perpendicular so they get logged properly in the trajectory files
         vnew = self.vector_rejection( atoms.get_momenta()/masses, f_constrained)
         #vnew = self.vector_rejection(atoms.get_velocities(), f)
@@ -386,5 +360,4 @@ class contour_exploration(Dynamics):
 
         ### Normally this would be the second part of RATTLE will be done here like this:
         ### atoms.set_momenta(atoms.get_momenta() + 0.5 * self.dt * f)
-        if self.verbose: print('')
         return f
