@@ -57,3 +57,4 @@ from .plot_energy_error import plot_energy_error
 from .plot_force_error import plot_force_error
 from .plot_force_angles import plot_force_angles
 from .plot_force_angle_heatmaps import plot_force_angle_heatmaps
+from .plot_energy_error_heatmap import plot_energy_error_heatmap
