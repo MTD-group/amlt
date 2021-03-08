@@ -30,6 +30,13 @@ def plot_energy_error_heatmap(ax,
     if use_meV_x: scalex = 1000
     if use_meV_y: scaley = 1000
     
+    def pick_bins(abin_size, A):
+        if abin_size is None:
+            abins = np.linspace(A.min(), A.max(), 100)
+        else:
+            abins = np.arange(A.min(),  A.max(), abin_size)
+        return abins
+    
     #from matplotlib.ticker import MultipleLocator
     #ax.yaxis.set_major_locator(MultipleLocator(base=30))
     #ax.yaxis.set_minor_locator(MultipleLocator(base=5))
@@ -58,30 +65,16 @@ def plot_energy_error_heatmap(ax,
 
     X = data_energy * scalex
     Y = energy_error * scaley
-    if xbin_size is None:
-        xbins = np.linspace(X.min(),X.max(), 100)
-    else:
-        xbins = np.arange(X.min(),  X.max(), xbin_size)
+
     
-    if ybin_size is None:
-        ybins = np.linspace(Y.min(),Y.max(), 100)
-    else:
-        ybins = np.arange(Y.min(), Y.max(), ybin_size)
+    xbins = pick_bins(xbin_size, X)
+    ybins = pick_bins(ybin_size, Y)
 
 
     
     ax.hist2d(X, Y, bins = (xbins, ybins), vmin=1, cmap = cmap_tweaked)
     
-
-    #label = data_name + '\nMean: %.2f°\nRMS: %.2f°'%(mean_force_angles, rms_force_angles)
-    
     ax.set_title(data_name , fontsize= 8)
-
-    #scale = 1.05
-    #ax.set_ylim(Y.min()*scale, Y.max()*scale )
-    #ax.set_xlim(X.min()*scale, X.max()*scale )
-    
-    #ax2.legend(fontsize = 8, handletextpad = 0.3, borderpad = 0.1)
     ax.minorticks_on()
 
 

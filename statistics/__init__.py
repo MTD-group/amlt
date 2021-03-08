@@ -34,6 +34,7 @@ dyn_types    = [ 'md','relax','sp','ce','dimer']
 
 
 def nice_bins_percentile(data, bins_in_window = 30, window_percent = 90):
+    '''Uses the CDF of some distributions denser region to pick some reasonable bins'''
 
     window = np.percentile(data, [50 - window_percent/2.0, 50 + window_percent/2.0])
     bin_step = (window.max()-window.min())/bins_in_window
@@ -58,3 +59,5 @@ from .plot_force_error import plot_force_error
 from .plot_force_angles import plot_force_angles
 from .plot_force_angle_heatmaps import plot_force_angle_heatmaps
 from .plot_energy_error_heatmap import plot_energy_error_heatmap
+from .plot_force_error_heatmap import plot_force_error_heatmap
+from .plot_force_angle_polar_heatmap import plot_force_angle_polar_heatmap
