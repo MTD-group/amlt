@@ -9,14 +9,11 @@ from . import get_energy_lists
 from . import nice_bins_percentile
 from matplotlib import cm
 
-formula_angle  = r"$\theta_\mathbf{F} = \cos^{-1} \left (   \frac{\mathbf{F}_{MLIP} \cdot \mathbf{F}_{DFT} }{\left | \mathbf{F}_{MLIP}  \right | \left | \mathbf{F}_{DFT}  \right |} \right )$"
+#formula_angle  = r"$\theta_\mathbf{F} = \cos^{-1} \left (   \frac{\mathbf{F}_{MLIP} \cdot \mathbf{F}_{DFT} }{\left | \mathbf{F}_{MLIP}  \right | \left | \mathbf{F}_{DFT}  \right |} \right )$"
 
 
 def plot_energy_error_heatmap(ax, 
-                data_set, 
-                struct_types = struct_types,
-                dyn_types = dyn_types,
-                bad_data_traj_list = [],
+                image_pairs,
                 xbin_size = None,
                 ybin_size = None,
                 use_meV_y = False,
@@ -49,14 +46,14 @@ def plot_energy_error_heatmap(ax,
     Colormap.set_over(cmap_tweaked, color=(1,1,1,0))
     
 
-    fname =  data_set[0]
-    data_name = data_set[1]
+    #fname =  data_set[0]
+    #data_name = data_set[1]
 
     
-    image_pairs = read_evaluation_data(filename = fname,
-        struct_types = struct_types,
-        dyn_types = dyn_types,
-        bad_data_traj_list = bad_data_traj_list)
+    #image_pairs = read_evaluation_data(filename = fname,
+    #    struct_types = struct_types,
+    #    dyn_types = dyn_types,
+    #    bad_data_traj_list = bad_data_traj_list)
     
     cache_energy, data_energy = get_energy_lists(image_pairs)
     energy_error = cache_energy - data_energy
@@ -74,7 +71,7 @@ def plot_energy_error_heatmap(ax,
     
     ax.hist2d(X, Y, bins = (xbins, ybins), vmin=1, cmap = cmap_tweaked)
     
-    ax.set_title(data_name , fontsize= 8)
+    #ax.set_title(data_name , fontsize= 8)
     ax.minorticks_on()
 
 
