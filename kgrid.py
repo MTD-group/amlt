@@ -11,17 +11,22 @@ def get_kpts_from_kpd(atoms, kpd, only_even = False, show_kpts = True, atol = 1e
     # tries to keep equi-planar spacing in k-space to match a KPD
     import numpy as np
     #kpd = kpoint_density
-    lengths_angles = atoms.cell.cellpar()
+    #lengths_angles = atoms.cell.cellpar()
     vol = atoms.get_volume()
-    lengths = lengths_angles[0:3]
+    lengths = atoms.cell.lengths()
     ngrid = kpd/vol # BZ volume = 1/cell volume (without 2pi factors)
     plane_density_mean = (ngrid * lengths[0] * lengths[1] * lengths[2]) ** (1 / 3)
+    #plane_density_mean = (ngrid * vol) ** (1 / 3)
 
     nkpt_frac  = np.zeros(3)
+    nkpt       = np.ones(3)
     for i, l in enumerate(lengths):
         nkpt_frac[i] = max(plane_density_mean / l, 1)
-        
-    nkpt       = np.floor(nkpt_frac)
+        if nkpt_frac[i]>step: #we can only round down to the bare minimum right?
+            nkpt[i] = np.floor(nkpt_frac[i]/step)*step
+    
+    #print(nkpt_frac,'->',nkpt)
+    #nkpt       = np.floor(nkpt_frac)
     actual_kpd = vol * nkpt[0]*nkpt[1]*nkpt[2]
     
     if True:
@@ -70,6 +75,7 @@ def get_kpts_from_kpd(atoms, kpd, only_even = False, show_kpts = True, atol = 1e
     if show_kpts:
         print('kgrid: %i x %i x %i'%tuple(kpts))
         print('kpd target: %.3f, actual kpd: %.3f'%(kpd, actual_kpd))
+        print('k-plane target: %.3f'%  plane_density_mean)
         for i in range(3):
             print('k-plane %i kpd: %.3f' %(i,kpts[i]*lengths[i]))
     return kpts
