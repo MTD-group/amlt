@@ -28,7 +28,7 @@ def reasonable_random_structure_maker(elements, composition_generator,
                                         hard_radii    = None,
                                         hard_radius_ratio = 0.85,
                                         magmom_generator = None,
-                                        verbose = False
+                                        verbose = False,
                                         rng=None,
                                         ):
                                         #seed = 312

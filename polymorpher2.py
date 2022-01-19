@@ -178,7 +178,7 @@ def polymorphate(
         return atoms_out
 
 
-class Polymorpher2(object):
+class Polymorpher(object):
     
     def __init__(self, 
                  atoms,
