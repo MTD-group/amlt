@@ -16,7 +16,7 @@ default_element_radii = {}
 default_hard_radii    = {}
 for z in range(len(ase_covalent_radii)):
     default_element_radii[chemical_symbols[z]] = ase_covalent_radii[z]
-    default_hard_radii[chemical_symbols[z]] = 0.9*ase_covalent_radii[z]
+    default_hard_radii[chemical_symbols[z]] = 0.85*ase_covalent_radii[z]
 
 def reasonable_random_structure_maker(elements, composition_generator,
                                         cut_off_radius = 5.0,
@@ -25,9 +25,12 @@ def reasonable_random_structure_maker(elements, composition_generator,
                                         insert_attempt_max = 2000,
                                         max_build_failures = 20,
                                         element_radii = default_element_radii,
-                                        hard_radii    = default_hard_radii,
+                                        hard_radii    = None,
+                                        hard_radius_ratio = 0.85,
                                         magmom_generator = None,
-                                        verbose = False):
+                                        verbose = False
+                                        rng=None,
+                                        ):
                                         #seed = 312
     from ase import Atoms, Atom
     from ase.data import atomic_numbers, chemical_symbols
@@ -35,6 +38,10 @@ def reasonable_random_structure_maker(elements, composition_generator,
     import numpy as np 
     from numpy.random import rand
     from random import shuffle
+    
+    if hard_radii is None:
+        for z in range(len(ase_covalent_radii)):
+            hard_radii[chemical_symbols[z]] = hard_radius_ratio*element_radii[z]
     #z_numbers = [atomic_numbers[el] for el in elements ]
 
     #print('Not tested with non-orthrombic systems!')
@@ -98,7 +105,7 @@ def reasonable_random_structure_maker(elements, composition_generator,
     composition_failed = True
     while composition_failed:
 
-        fill_factor = (fill_factor_max - fill_factor_min) * rand() + fill_factor_min
+        fill_factor = (fill_factor_max - fill_factor_min) * rand() + fill_factor_min ########## needs updating
         atomic_fractions =  composition_generator(elements)
         nspecies = compute_nspecies(atomic_fractions, fill_factor = fill_factor )
 
@@ -116,7 +123,7 @@ def reasonable_random_structure_maker(elements, composition_generator,
 
         # random test order
         test_order = list(range(sum(nspecies)))
-        shuffle(test_order)
+        shuffle(test_order) ########## needs updating
 
         last_prefix = 'Atom Count '+ ('(%i) '%sum(nspecies))
         
@@ -155,7 +162,7 @@ def reasonable_random_structure_maker(elements, composition_generator,
             
                 attempt_no = 0
                 while safe_insert==False and attempt_no < insert_attempt_max:
-                    position = test_atoms.get_cell().dot(rand(3))
+                    position = test_atoms.get_cell().dot(rand(3)) ###needs updating
 
                     safe_insert = safe_insertion_test(test_atoms, el, position)
 
