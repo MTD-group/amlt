@@ -193,6 +193,7 @@ class Polymorpher(object):
                  flip_chance = 0.10,
                  swap_chance = 0.05,
                  min_cells = 2,
+                 max_atoms = 200,
                  rng = rng): 
     
         """ Creates a perturbed version of the input structure.
@@ -228,7 +229,16 @@ class Polymorpher(object):
         self.flip_chance=flip_chance
         self.swap_chance=swap_chance
         self.min_cells=min_cells
+        self.max_atoms=max_atoms
         self.rng = rng
+        
+        ## TODO: we  need some error checking that doesn't let users select max_atoms 
+        ## less than the max number of atoms in their structure set (*min_cells) 
+        if type(self.atoms) is Atoms:
+            min_atoms = len(self.atoms)*self.min_cells # min atoms is the amount that can satisfy the min_cells for all structures
+        else:
+            min_atoms = max([len(struc) for struc in self.atoms])*min_cells
+        assert(min_atoms<max_atoms)
         
     def __call__(self, return_index = False):
         if type(self.atoms) is Atoms:
@@ -238,7 +248,9 @@ class Polymorpher(object):
             index = self.rng.choice(len(self.atoms), p=self.weights/sum(self.weights))
             atoms_picked = self.atoms[index]
 
-        atoms_out = polymorphate(
+        natoms = 1+self.max_atoms # just to start the loop
+        while natoms > self.max_atoms:
+            atoms_out = polymorphate(
                 atoms_picked,
                 elements =self.elements, 
                 rcut=self.rcut,
@@ -251,6 +263,7 @@ class Polymorpher(object):
                 swap_chance =self.swap_chance,
                 min_cells = self.min_cells,
                 rng=self.rng)
+            natoms = len(atoms_out)
 
         if return_index:
             return atoms_out, index

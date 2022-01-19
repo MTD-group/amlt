@@ -1,4 +1,19 @@
 
+import os
+from ase import io
+
+def populate_directory(directory, generator, n=50, filename='initial.CONTCAR', verbose=True):
+    '''A generator is a funtion (class) that should return new structures each time it's called:
+    populate_directory(directory='structures', generator = Polymorpher(**parameters))'''
+    for i in range(n):
+        dpath = os.path.join(directory,'%i'%i)
+        os.makedirs(dpath, exist_ok=True)
+        fpath=os.path.join(dpath,filename)
+        atoms = generator()
+        print(fpath, atoms.get_chemical_formula())
+        io.write(fpath,atoms)
+        
+
 
 def reorder_image_list_for_balanced_atom_counts(image_list, ncores = 4):
 
