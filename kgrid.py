@@ -1,7 +1,7 @@
 
 
 
-def get_kpts_from_kpd(atoms, kpd, only_even = False, show_kpts = True, atol = 1e-1 ):
+def get_kpts_from_kpd(atoms, kpd, only_even = False, enforce_mean_plane_density=False, show_kpts = True, atol = 1e-1 ):
     
     if only_even:
         step = 2
@@ -23,7 +23,10 @@ def get_kpts_from_kpd(atoms, kpd, only_even = False, show_kpts = True, atol = 1e
     for i, l in enumerate(lengths):
         nkpt_frac[i] = max(plane_density_mean / l, 1)
         if nkpt_frac[i]>step: #we can only round down to the bare minimum right?
-            nkpt[i] = np.floor(nkpt_frac[i]/step)*step
+            if enforce_mean_plane_density:
+                nkpt[i] = np.ceil(nkpt_frac[i]/step)*step
+            else:
+                nkpt[i] = np.floor(nkpt_frac[i]/step)*step
     
     #print(nkpt_frac,'->',nkpt)
     #nkpt       = np.floor(nkpt_frac)

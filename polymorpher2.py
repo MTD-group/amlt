@@ -2,7 +2,7 @@
 from .super_cell import compute_super_cell_needed_for_rcut
 from .random_sheer import random_sheer_matrix
 
-#from ase import build
+from ase import Atoms
 import numpy as np
 
 
@@ -182,6 +182,7 @@ class Polymorpher2(object):
     
     def __init__(self, 
                  atoms,
+                 weights=None,
                  elements = None, 
                  rcut=6.0,
                  atom_displacement=0.2, 
@@ -214,6 +215,8 @@ class Polymorpher2(object):
             random_seed (Integer): Set for reproducible Numpy randomness
         """
         self.atoms = atoms
+        if weights is None:
+            self.weights=np.ones(len(atoms))/len(atoms)
 
         self.elements=elements
         self.rcut=rcut
@@ -227,9 +230,16 @@ class Polymorpher2(object):
         self.min_cells=min_cells
         self.rng = rng
         
-    def __call__(self):
-        return polymorphate(
-                self.atoms,
+    def __call__(self, return_index = False):
+        if type(self.atoms) is Atoms:
+            atoms_picked = self.atoms
+            index = 0
+        else:
+            index = self.rng.choice(len(self.atoms), p=self.weights/sum(self.weights))
+            atoms_picked = self.atoms[index]
+
+        atoms_out = polymorphate(
+                atoms_picked,
                 elements =self.elements, 
                 rcut=self.rcut,
                 atom_displacement=self.atom_displacement, 
@@ -242,7 +252,10 @@ class Polymorpher2(object):
                 min_cells = self.min_cells,
                 rng=self.rng)
 
-
+        if return_index:
+            return atoms_out, index
+        else:
+            return atoms_out
     
 
     
