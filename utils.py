@@ -10,7 +10,7 @@ def populate_directory(directory, generator, n=50, filename='initial.CONTCAR', v
         os.makedirs(dpath, exist_ok=True)
         fpath=os.path.join(dpath,filename)
         atoms = generator()
-        print(fpath, atoms.get_chemical_formula())
+        print(fpath, len(atoms), atoms.get_chemical_formula())
         io.write(fpath,atoms)
         
 
