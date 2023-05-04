@@ -79,7 +79,7 @@ def plot_force_energy_heatmap(ax,
 
     xbins = pick_bins(xbin_size, X)
     ybins = pick_bins(ybin_size, Y, use_log=use_logy)
-    print(ybins)
+    #print(ybins)
     ax.hist2d(X, Y, bins = (xbins, ybins), vmin=1, cmap = cmap_tweaked)
 
     if use_logy:
