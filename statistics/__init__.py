@@ -51,7 +51,7 @@ def nice_bins_percentile(data, bins_in_window = 30, window_percent = 90):
     
     
     
-
+from .plot_force_energy_heatmap import plot_force_energy_heatmap
 from .plot_energy_parity import plot_energy_parity
 from .plot_force_parity import plot_force_parity
 from .plot_energy_error import plot_energy_error

@@ -18,8 +18,9 @@ def plot_energy_error_heatmap(ax,
                 ybin_size = None,
                 use_meV_y = False,
                 use_meV_x = False,
-                cmap = cm.get_cmap('plasma')):
-    
+                cmap = cm.get_cmap('plasma'),
+                reference_energies = None):
+    '''Plots energy error vs energy heatmap'''
 
 
     scalex = 1
@@ -38,6 +39,14 @@ def plot_energy_error_heatmap(ax,
     #ax.yaxis.set_major_locator(MultipleLocator(base=30))
     #ax.yaxis.set_minor_locator(MultipleLocator(base=5))
     
+    if reference_energies is None:
+        ref_energies = np.zeros(len(image_pairs))
+    else:
+        ref_e_per_atom = [ 
+            reference_energies[i]/len(image_pairs[i][0]) 
+            for i in range(len(image_pairs)) ]
+            
+    
     
     import copy
     cmap_tweaked = copy.copy(cmap)
@@ -46,21 +55,13 @@ def plot_energy_error_heatmap(ax,
     Colormap.set_over(cmap_tweaked, color=(1,1,1,0))
     
 
-    #fname =  data_set[0]
-    #data_name = data_set[1]
-
-    
-    #image_pairs = read_evaluation_data(filename = fname,
-    #    struct_types = struct_types,
-    #    dyn_types = dyn_types,
-    #    bad_data_traj_list = bad_data_traj_list)
     
     cache_energy, data_energy = get_energy_lists(image_pairs)
     energy_error = cache_energy - data_energy
     error_rmse = np.sqrt(np.mean( energy_error**2)) * scaley
     error_mae  = np.mean(np.absolute(energy_error)) * scaley
 
-    X = data_energy * scalex
+    X = (data_energy - ref_e_per_atom) * scalex
     Y = energy_error * scaley
 
     
