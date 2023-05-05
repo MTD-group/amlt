@@ -29,15 +29,13 @@ def plot_force_energy_heatmap(ax,
     def pick_bins(abin_size, A, use_log=False):
         if abin_size is None:
             if not use_log:
-                abins = np.linspace(A.min(), A.max(), 100)
+                abins = np.linspace(A.min(), A.max(), 50)
             else:
-                abins = np.logspace(np.log10(A.min()), np.log10(A.max()), 100, base=10)
+                abins = np.logspace(np.log10(A.min()), np.log10(A.max()), 50, base=10)
         else:
             abins = np.arange(A.min(),  A.max(), abin_size)
         return abins
-    #from matplotlib.ticker import MultipleLocator
-    #ax.yaxis.set_major_locator(MultipleLocator(base=30))
-    #ax.yaxis.set_minor_locator(MultipleLocator(base=5))
+
     
     
     if reference_energies is None:
@@ -66,10 +64,11 @@ def plot_force_energy_heatmap(ax,
         energies_per_atom_expanded = []
         for i in range(len(image_pairs)):
             energies_per_atom_expanded+= len(image_pairs[i][0])*[energies_per_atom[i]]
+        energies_per_atom_expanded = np.array(energies_per_atom_expanded)
             
         atom_force_norms = collapse_sub_lists( compute_force_norms_by_atom(data_forces))
         X          = scalex * energies_per_atom_expanded
-        Y          = scaley * atom_force_norm
+        Y          = scaley * atom_force_norms
     else:
         image_force_norms = compute_force_norms_by_image(data_forces)/np.sqrt(3)
         X          = scalex * energies_per_atom
